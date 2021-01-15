@@ -1,0 +1,109 @@
+<!doctype html>
+<title>mayonaise</title>
+<script src="./mayo.js"></script>
+<style>
+	body {
+		margin: 0;
+		padding: 0;
+		display: flex;
+	}
+
+	[active] {
+		outline: solid 2px greenyellow;
+	}
+
+	mayo-document {
+		flex: 1;
+	}
+</style>
+<mayo-sidebar role="nav">
+	<template data-shadowroot>
+		<style>
+			* {
+				box-sizing: border-box;
+			}
+
+			nav {
+				overflow: auto;
+				width: 200px;
+				background: #ffe9ed;
+				color: #c36;
+				height: 100vh;
+				padding: 1em;
+				font-size: 0.9em;
+				resize: horizontal;
+			}
+
+			ul {
+				list-style: none;
+				padding: 0;
+			}
+		</style>
+		<nav>
+			<ul class="files" data-target="mayo-sidebar.list">
+			</ul>
+		</nav>
+	</template>
+</mayo-sidebar>
+
+<mayo-document role="main">
+	<template data-shadowroot>
+		<style>
+			* {
+				box-sizing: border-box;
+			}
+
+			article {
+				overflow: auto;
+				width: 100%;
+				height: 100vh;
+				font-size: 1.4em;
+				font-family: avenir next, sans-serif;
+				padding: 1em;
+				color: #000;
+				line-height: 1.2;
+			}
+
+			h1 {
+				font-weight: bold;
+				font-size: 1.4em;
+			}
+
+			h2 {
+				font-weight: bold;
+				font-size: 1.35em;
+			}
+
+			h3 {
+				font-weight: bold;
+				font-size: 1.25em;
+			}
+
+			h4 {
+				font-weight: bold;
+				font-size: 1.2em;
+			}
+
+			h5 {
+				font-weight: bold;
+				font-size: 1.15em;
+			}
+
+			h6 {
+				font-weight: bold;
+				font-size: 1.1em;
+			}
+
+			ul {
+				list-style-type: disc;
+				padding-left: 1em;
+			}
+
+			ul li::-moz-list-bullet {
+				color: #af2af0;
+			}
+		</style>
+		<article data-target="mayo-document.document">
+		</article>
+	</template>
+</mayo-document>

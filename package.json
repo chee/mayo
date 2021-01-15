@@ -1,0 +1,16 @@
+{
+  "workspaces": [
+    "packages/*"
+  ],
+  "name": "mayo-editor",
+  "version": "1.0.0-alpha.0",
+  "description": "the mayo editor",
+  "main": "index.js",
+  "repository": "https://git.snoot.club/chee/mayo",
+  "author": "chee <chee@snoot.club>",
+  "license": "GPL-3.0+",
+  "private": true,
+  "devDependencies": {
+    "prettier": "^2.2.1"
+  }
+}

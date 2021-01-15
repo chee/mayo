@@ -1,0 +1,21 @@
+{
+	"compilerOptions": {
+		"lib": [
+			"es2020",
+			"DOM"
+		],
+		"strict": true,
+		"isolatedModules": true,
+		"strictPropertyInitialization": false,
+		"experimentalDecorators": true,
+		"target": "ES2020",
+		"moduleResolution": "Node",
+		"allowSyntheticDefaultImports": true,
+		"outDir": "./dist",
+		"allowJs": true,
+		"sourceMap": true
+	},
+	"include": [
+		"src/*"
+	]
+}
