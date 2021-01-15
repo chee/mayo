@@ -3,6 +3,12 @@ import {render, html} from "@github/jtml"
 export default class MayoListElement extends HTMLElement {
 	@target root: HTMLElement
 	connectedCallback() {
-		this.shadowRoot!.appendChild()
+		let style = document.createElement("style")
+		style.innerHTML = `
+			mayo-list-item {
+				display: list-item;
+			}
+		`
+		this.shadowRoot!.appendChild(style)
 	}
 }
