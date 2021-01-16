@@ -9,6 +9,6 @@ export default class MayoListElement extends HTMLElement {
 				display: list-item;
 			}
 		`
-		this.shadowRoot!.appendChild(style)
+		// this.shadowRoot!.appendChild(style)
 	}
 }

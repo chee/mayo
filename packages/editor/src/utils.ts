@@ -22,3 +22,9 @@ export function remove(
 ): Node | null | undefined {
 	return uremove(tree, options, condition)
 }
+
+export function getMayoName(camelName: string) {
+	let hyphenName = camelName.replace(/([A-Z]($|[a-z]))/g, "-$1").toLowerCase()
+	let mayoName = `mayo-${hyphenName}`
+	return mayoName
+}

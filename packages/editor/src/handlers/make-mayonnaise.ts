@@ -1,20 +1,41 @@
 import type {H} from "mdast-util-to-hast"
 import type {Node} from "unist"
-
+import type {Content} from "mdast"
+import {getMayoName} from "../utils"
 let u = require("unist-builder")
 
-export default function makeMayonnaise(h: H, mdNode: Node, hastNode: Node) {
-	//let mysteria = (mdNode.position as unknown) as Node
+let randy = () => Math.random().toString(32).slice(2)
+
+function getProps(mdNode: Content): {[key: string]: string} {
+	switch (mdNode.type) {
+		case "code": {
+			return {
+				meta: mdNode.meta || "",
+				lang: mdNode.lang || "",
+			}
+		}
+	}
+	return {}
+}
+
+export default function makeMayonnaise(h: H, mdNode: Content, hastNode: Node) {
 	let camelName = mdNode.type
-	let hyphenName = camelName.replace(/([A-Z]($|[a-z]))/g, "-$1").toLowerCase()
-	let mayoName = `mayo-${hyphenName}`
-	let properties = hastNode.properties as {[s: string]: string}
-	properties!["data-target"] = `mayoName.root`
-	properties!["contenteditable"] = "true"
+	let mayoName = getMayoName(camelName)
+	let mayoNodeProperties = getProps(mdNode)
+	let hastNodeProperties = (hastNode.properties as {[s: string]: string}) || {}
+	hastNodeProperties!["data-target"] = `${mayoName}.root`
+	hastNodeProperties!["contenteditable"] = "true"
+	if (!mdNode.data) {
+		mdNode.data = {
+			id: randy(),
+		}
+	}
 	return h(
 		mdNode,
 		mayoName,
 		{
+			...mayoNodeProperties,
+			id: mdNode.data.id,
 			"data-targets": `mayo-document.${camelName}s`,
 			"data-action": `
 			click:${mayoName}#select

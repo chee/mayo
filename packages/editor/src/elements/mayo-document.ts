@@ -1,27 +1,53 @@
 import parse from "mdast-util-from-markdown"
-import convertToHast from "mdast-util-to-hast"
-import convertToHtml from "hast-util-to-html"
-import type {Root as mdRoot, Heading as mdHeading} from "mdast"
+// import convertToHast from "mdast-util-to-hast"
+//import convertToHtml from "hast-util-to-html"
+import convertToHtml from "../convert-to-html"
+import type {
+	Root as mdRoot,
+	Heading as mdHeading,
+	Paragraph as mdParagraph,
+	Content as mdContent,
+} from "mdast"
 import {target, targets} from "@github/catalyst"
 import handlers from "../handlers"
 import type {
-	MayoBlockElement,
-	MayoCodeblockElement,
+	MayoBreakElement,
+	MayoCodeElement,
+	MayoInlineCodeElement,
+	MayoDefinitionElement,
+	MayoDeleteElement,
+	MayoEmphasisElement,
+	MayoFootnoteDefinitionElement,
 	MayoFootnoteElement,
+	MayoFootnoteReferenceElement,
 	MayoHeadingElement,
 	MayoThematicBreakElement,
+	MayoHtmlElement,
 	MayoImageElement,
+	MayoImageReferenceElement,
 	MayoListItemElement,
+	MayoLinkElement,
+	MayoLinkReferenceElement,
 	MayoListElement,
 	MayoParagraphElement,
 	MayoBlockquoteElement,
+	MayoFlowContentElement,
+	MayoPhrasingContentElement,
 	MayoRootElement,
+	MayoStrongElement,
 	MayoTableElement,
+	MayoTextElement,
+	MayoTomlElement,
+	MayoYamlElement,
+	MayoContentElement,
+	MayoMdastContentElement,
 } from "./index"
 import visit from "unist-util-visit"
 import {Node as UnistNode} from "unist"
+import {getMayoName, find} from "../utils"
+import {html, render} from "lit-html"
 
-function atBeginning(root: Node) {
+function caretIsAtBeginningOf(root: Node) {
 	let s = document.getSelection()
 	let anchor = s!.anchorNode
 	let children = Array.from(root.childNodes)
@@ -33,20 +59,20 @@ function atBeginning(root: Node) {
 	)
 }
 
-function isModified(event: KeyboardEvent) {
+function hasKeyboardModifiers(event: KeyboardEvent) {
 	return event.ctrlKey || event.metaKey || event.altKey
 }
 
 interface TransformEvent extends CustomEvent {
 	detail: {
-		element: MayoBlockElement
+		element: MayoMdastContentElement
 		originalEvent: KeyboardEvent | InputEvent
 	}
 }
 
 interface SelectEvent extends CustomEvent {
 	detail: {
-		element: MayoBlockElement
+		element: MayoFlowContentElement
 		originalEvent?: MouseEvent
 	}
 }
@@ -59,33 +85,153 @@ function isInputEvent(event: Event): event is InputEvent {
 	return event.type == "input"
 }
 
-let KEYS_THAT_ARE_EVER_SPECIAL = /^[`~_*-]$/
+function getNameOf(element: MayoMdastContentElement) {
+	return element.tagName
+		.toLowerCase()
+		.replace(/^mayo-/, "")
+		.replace(/-([a-z])/g, $1 => $1[1].toUpperCase())
+}
+
+interface Caret {
+	node?: mdContent
+	element?: MayoMdastContentElement
+	offset: number
+}
 
 export default class MayoDocumentElement extends HTMLElement {
 	@target document: HTMLElement
-	@targets blocks: MayoBlockElement[]
-	@targets codeblocks: MayoCodeblockElement[]
+	@targets blockquotes: MayoBlockquoteElement[]
+	@targets breaks: MayoBreakElement[]
+	@targets codes: MayoCodeElement[]
+	@targets deletes: MayoDeleteElement[]
+	@targets emphasiss: MayoEmphasisElement[]
+	@targets footnoteReferences: MayoFootnoteReferenceElement[]
 	@targets footnotes: MayoFootnoteElement[]
 	@targets headings: MayoHeadingElement[]
-	@targets hrs: MayoThematicBreakElement[]
+	@targets htmls: MayoHtmlElement[]
+	@targets imageReferences: MayoImageReferenceElement[]
 	@targets images: MayoImageElement[]
-	@targets items: MayoListItemElement[]
+	@targets inlineCodes: MayoInlineCodeElement[]
+	@targets linkReferences: MayoLinkReferenceElement[]
+	@targets links: MayoLinkElement[]
+	@targets listItems: MayoListItemElement[]
 	@targets lists: MayoListElement[]
 	@targets paragraphs: MayoParagraphElement[]
-	@targets quotes: MayoBlockquoteElement[]
 	@targets roots: MayoRootElement[]
+	@targets strongs: MayoStrongElement[]
 	@targets tables: MayoTableElement[]
-	@target activeBlock: MayoBlockElement
+	@targets texts: MayoTextElement[]
+	@targets thematicBreaks: MayoThematicBreakElement[]
+	@targets tomls: MayoTomlElement[]
+	@targets yamls: MayoYamlElement[]
+	@targets definitions: MayoDefinitionElement[]
+	@targets footnoteDefinitions: MayoFootnoteDefinitionElement[]
+	@target activeBlock: MayoFlowContentElement
+	ast: mdRoot
+	caret: Caret = {
+		element: undefined,
+		node: undefined,
+		offset: 0,
+	}
+	content = ""
 
-	select(event: SelectEvent) {
+	select(event: MouseEvent) {
 		if (this.activeBlock) {
 			delete this.activeBlock.dataset.target
 		}
+		let element = event.currentTarget! as MayoMdastContentElement
 
-		event.detail.element.dataset.target = "mayo-document.activeBlock"
+		element.dataset.target = "mayo-document.activeBlock"
+
+		let node = this.getNodeForElement(element)
+
+		let sel = document.getSelection()
+		let offset = sel?.focusOffset
+		this.caret = {
+			node,
+			element: element,
+			offset: offset || 0,
+		}
 	}
 
-	transform({detail: {originalEvent, element}}: TransformEvent) {
+	getElementForNode(node: mdContent): MayoMdastContentElement {
+		let index = 0
+		let seen = false
+		visit(this.ast, node.type, (n: mdContent) => {
+			if (!seen) {
+				if (n == node) {
+					seen = true
+				} else {
+					index += 1
+				}
+			}
+		})
+
+		// @ts-ignore
+		return this[node.type + "s"][index]
+	}
+
+	getNodeForElement(element: MayoMdastContentElement): mdContent {
+		let name = getNameOf(element)
+
+		// @ts-ignore
+		let index: number = this[name + "s"].findIndex((n: Node) => n == element)
+
+		let astNodes: mdContent[] = []
+
+		visit(
+			this.ast,
+			// @ts-ignore
+			name,
+			(node: mdContent) => {
+				astNodes.push(node)
+				return node
+			}
+		)
+
+		return astNodes[index]
+	}
+
+	handleBeginning(key: string, element: MayoMdastContentElement): boolean {
+		let name = getNameOf(element)
+
+		if (key == "#") {
+			if (["paragraph"].includes(name)) {
+				let node = this.getNodeForElement(element)
+				node.type = "heading"
+				node.depth = 1
+				return true
+			}
+			if (["heading"].includes(name)) {
+				let node = this.getNodeForElement(element) as mdHeading
+				if (node.depth < 6) {
+					node.depth += 1
+				}
+				return true
+			}
+		}
+		if (key == "backspace") {
+			if (["listItem", "blockquote"].includes(name)) {
+				let node = this.getNodeForElement(element)
+				node.type = "paragraph"
+				return true
+			}
+			if (["heading"].includes(name)) {
+				let node = this.getNodeForElement(element) as mdHeading
+				if (node.depth > 1) {
+					node.depth -= 1
+				} else {
+					delete node.depth
+					node.type = "paragraph"
+				}
+				return true
+			}
+		}
+		return false
+	}
+
+	transform(event: KeyboardEvent | InputEvent) {
+		console.log({event})
 		let selection = document.getSelection()
 		let isCaret = selection!.anchorOffset == selection!.focusOffset
 		let isRange = !isCaret
@@ -93,57 +239,68 @@ export default class MayoDocumentElement extends HTMLElement {
 		let name = element.nodeName.toLowerCase().replace(/^mayo-/, "")
 		if (isInputEvent(originalEvent)) {
 			console.log(originalEvent)
+			if (originalEvent.inputType == "insertText") {
+				let inputText = originalEvent.data
+				console.log(
+					originalEvent.originalTarget.getRootNode().host,
+					this.texts,
+					this.inlineCodes
+				)
+				let node = this.getNodeForElement(
+					originalEvent.originalTarget.getRootNode().host
+				)
+				console.log({node})
+				console.log(node.children)
+				let currentText = node.value
+				console.log(node.children)
+			}
 		}
 		if (isKeyboardEvent(originalEvent)) {
 			let key = originalEvent.key.toLowerCase()
+			let atBeginning = caretIsAtBeginningOf(element.root)
+			let keyMightBeSpecialAtBeginning = key.match(/^(?:[>`#*~-]|backspace)$/)
+
 			if (
-				name == "heading" &&
-				!isModified(originalEvent) &&
-				atBeginning(element.root) &&
-				(key == "#" || key == "backspace")
+				atBeginning &&
+				!hasKeyboardModifiers(originalEvent) &&
+				keyMightBeSpecialAtBeginning
 			) {
-				let index = this.headings.findIndex(n => n == element)
-
-				let astHeadings: mdHeading[] = []
-				// @ts-ignore
-				visit(this.ast, "heading", (node: mdHeading) => {
-					astHeadings.push(node)
-					return node
-				})
-				let heading = astHeadings[index]
-
-				if (key == "#") {
-					heading.depth += 1
-					if (heading.depth > 6) {
-						heading.depth = 6
-					}
-				} else if (key == "backspace") {
-					heading.depth -= 1
-					if (heading.depth < 1) {
-						heading.depth = 1
-					}
+				if (this.handleBeginning(key, element)) {
+					originalEvent.preventDefault()
+					this.update()
 				}
-
-				this.update()
-				let range = document.createRange()
-				range.setStart(this.headings[index].root, 0)
-				selection?.removeAllRanges()
-				selection?.addRange(range!)
-
-				originalEvent.preventDefault()
 			}
 		}
 	}
-	ast: mdRoot
-	content = ""
+
 	update() {
-		this.content = convertToHtml(
-			convertToHast(this.ast, {
-				allowDangerousHtml: true,
-				handlers: handlers,
-			})
-		)
-		this.document.innerHTML = this.content
+		render(convertToHtml(this.ast), this.document)
+
+		// render(html`${this.content}`, this.document)
+
+		// if (this.caret.node) {
+		// 	let range = document.createRange()
+		// 	let selection = document.getSelection()
+
+		// 	range.setStart(
+		// 		this.getElementForNode(this.caret.node).root,
+		// 		this.caret.offset
+		// 	)
+		// 	selection?.removeAllRanges()
+		// 	selection?.addRange(range!)
+		// }
+
+		// let selection = document.getSelection()
+		// let shadow = selection?.focusNode?.getRootNode() as ShadowRoot
+		// let enclosure = shadow.host as MayoContentElement
+
+		// if (enclosure) {
+		// 	this.caret = {
+		// 		node: this.getNodeForElement(enclosure),
+		// 		element: enclosure,
+		// 		offset: selection?.focusOffset || 0,
+		// 	}
+		// }
 	}
 	connectedCallback() {
 		this.ast = parse(`# hello \`this\` and _that_

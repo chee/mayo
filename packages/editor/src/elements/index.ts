@@ -1,6 +1,6 @@
 import MayoBreakElement from "./markdown/mayo-break"
-import MayoCodeblockElement from "./markdown/mayo-code"
-import MayoCodeElement from "./markdown/mayo-inline-code"
+import MayoCodeElement from "./markdown/mayo-code"
+import MayoInlineCodeElement from "./markdown/mayo-inline-code"
 import MayoDefinitionElement from "./markdown/mayo-definition"
 import MayoDeleteElement from "./markdown/mayo-delete"
 import MayoEmphasisElement from "./markdown/mayo-emphasis"
@@ -29,43 +29,63 @@ import MayoSidebarElement from "./mayo-sidebar"
 import MayoSidebarFileElement from "./mayo-sidebar-file"
 import MayoDocumentElement from "./mayo-document"
 
-export type MayoBlockElement =
-	| MayoCodeblockElement
-	| MayoFootnoteElement
-	| MayoHeadingElement
-	| MayoThematicBreakElement
+export type MayoStaticPhrasingContentElement =
+	| MayoBreakElement
+	| MayoEmphasisElement
+	| MayoHtmlElement
 	| MayoImageElement
-	| MayoListItemElement
-	| MayoListElement
-	| MayoParagraphElement
+	| MayoImageReferenceElement
+	| MayoInlineCodeElement
+	| MayoStrongElement
+	| MayoTextElement
+
+export type MayoPhrasingContentElement =
+	| MayoLinkElement
+	| MayoLinkReferenceElement
+	| MayoStaticPhrasingContentElement
+
+export type MayoListContentElement = MayoListItemElement
+
+export type MayoContentElement = MayoDefinitionElement | MayoParagraphElement
+
+export type MayoFlowContentElement =
 	| MayoBlockquoteElement
-	| MayoRootElement
-	| MayoTableElement
+	| MayoCodeElement
+	| MayoHeadingElement
+	| MayoHtmlElement
+	| MayoListElement
+	| MayoThematicBreakElement
+	| MayoContentElement
+
+export type MayoMdastContentElement =
+	| MayoFlowContentElement
+	| MayoListContentElement
+	| MayoPhrasingContentElement
 
 export type {
 	MayoDocumentElement,
 	MayoSidebarElement,
 	MayoSidebarFileElement,
 	MayoBreakElement,
-	MayoCodeblockElement,
 	MayoCodeElement,
 	MayoDefinitionElement,
 	MayoDeleteElement,
 	MayoEmphasisElement,
-	MayoFootnoteDefinitionElement as MayoFootdefElement,
+	MayoFootnoteDefinitionElement,
 	MayoFootnoteElement,
-	MayoFootnoteReferenceElement as MayoFootrefElement,
+	MayoFootnoteReferenceElement,
 	MayoHeadingElement,
-	MayoThematicBreakElement as MayoHrElement,
+	MayoInlineCodeElement,
+	MayoThematicBreakElement,
 	MayoHtmlElement,
 	MayoImageElement,
-	MayoImageReferenceElement as MayoImagerefElement,
-	MayoListItemElement as MayoItemElement,
+	MayoImageReferenceElement,
+	MayoListItemElement,
 	MayoLinkElement,
-	MayoLinkReferenceElement as MayoLinkrefElement,
+	MayoLinkReferenceElement,
 	MayoListElement,
 	MayoParagraphElement,
-	MayoBlockquoteElement as MayoQuoteElement,
+	MayoBlockquoteElement,
 	MayoRootElement,
 	MayoStrongElement,
 	MayoTableElement,
@@ -79,8 +99,8 @@ export default [
 	MayoSidebarElement,
 	MayoSidebarFileElement,
 	MayoBreakElement,
-	MayoCodeblockElement,
 	MayoCodeElement,
+	MayoInlineCodeElement,
 	MayoDefinitionElement,
 	MayoDeleteElement,
 	MayoEmphasisElement,
