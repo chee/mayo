@@ -28,6 +28,7 @@ import MayoYamlElement from "./markdown/mayo-yaml"
 import MayoSidebarElement from "./mayo-sidebar"
 import MayoSidebarFileElement from "./mayo-sidebar-file"
 import MayoDocumentElement from "./mayo-document"
+import {MayoElement, MayoParentElement} from "./markdown/mayo-element"
 
 export type MayoStaticPhrasingContentElement =
 	| MayoBreakElement
@@ -125,3 +126,46 @@ export default [
 	MayoTomlElement,
 	MayoYamlElement,
 ]
+
+export interface BeforeInputEvent extends InputEvent {
+	getTargetRanges(): StaticRange[]
+}
+
+export type CaretInstruction =
+	| CaretIdInstruction
+	| CaretElementInstruction
+	| CaretTextInstruction
+
+export interface CaretIdInstruction {
+	type: "id"
+	// the id of the parent element to move to
+	id: string
+	// the index of the child in that parent element
+	index: number
+	// where the selection range should start
+	startOffset: number
+	// where the selection range should end
+	endOffset?: number
+}
+
+export interface CaretElementInstruction {
+	type: "element"
+	// the parent element to move to
+	element: MayoParentElement<any>
+	// the index of the child in that parent element
+	index: number
+	// where the selection range should start
+	startOffset: number
+	// where the selection range should end
+	endOffset?: number
+}
+
+export interface CaretTextInstruction {
+	type: "text"
+	// the parent element to move to
+	element: Text
+	// where the selection range should start
+	startOffset: number
+	// where the selection range should end
+	endOffset?: number
+}

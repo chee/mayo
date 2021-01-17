@@ -1,15 +1,8 @@
 import {target, targets} from "@github/catalyst"
-import {render, html} from "@github/jtml"
-export default class MayoTextElement extends HTMLElement {
-	connectedCallback() {}
-	transform(event: KeyboardEvent) {
-		this.dispatchEvent(
-			new CustomEvent("transform", {
-				detail: {
-					element: this,
-					originalEvent: event,
-				},
-			})
-		)
+import {MayoLiteralElement} from "./mayo-element"
+import * as md from "mdast"
+export default class MayoTextElement extends MayoLiteralElement<md.Text> {
+	connectedCallback() {
+		super.connectedCallback()
 	}
 }

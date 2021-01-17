@@ -1,6 +1,6 @@
 import {target, targets} from "@github/catalyst"
-import {render, html} from "@github/jtml"
+import {render, html} from "lit-html"
+import {templateContent} from "lit-html/directives/template-content"
 export default class MayoRootElement extends HTMLElement {
-	@target root: HTMLElement
 	connectedCallback() {}
 }

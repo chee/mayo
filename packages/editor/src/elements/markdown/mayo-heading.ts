@@ -1,48 +1,61 @@
 import {target} from "@github/catalyst"
-import {render, html} from "lit-html"
+import {render, html, TemplateResult} from "lit-html"
 import {templateContent} from "lit-html/directives/template-content"
-import {MayoMdastContentElement} from ".."
+import {CaretInstruction, MayoMdastContentElement} from ".."
+import type * as md from "mdast"
+import {MayoParentElement} from "./mayo-element"
 
-export default class MayoHeadingElement extends HTMLElement {
-	@target root: HTMLHeadingElement
-	@target childrenTemplate: HTMLTemplateElement
-	@target styleHole: HTMLElement
-	select(event: MouseEvent) {
-		this.dispatchEvent(
-			new CustomEvent("select", {
-				detail: {
-					element: this,
-					originalEvent: event,
-				},
-			})
-		)
+export default class MayoHeadingElement extends MayoParentElement<md.Heading> {
+	type = "block" as const
+
+	selfInsertText(text: string, range: StaticRange): CaretInstruction {
+		if (text == "#" && this.atBeginningOfBlock_(range)) {
+			if (this.node.depth < 6) {
+				this.node.depth += 1
+			}
+			return {
+				type: "element",
+				element: this,
+				index: 0,
+				startOffset: 0,
+			}
+		} else {
+			return super.selfInsertText(text, range)
+		}
 	}
 
-	transform(event: KeyboardEvent) {
-		this.dispatchEvent(
-			new CustomEvent("transform", {
-				detail: {
-					element: this,
-					originalEvent: event,
-				},
-			})
-		)
+	/**
+	 * @param selection the current selection
+	 * @param event the event
+	 * @returns whether or not the event caused a transformation
+	 */
+	handleKeydown(selection: Selection, event: KeyboardEvent): boolean {
+		let change = super.handleKeydown(selection, event)
+		if (this.atBeginningOfBlock(selection)) {
+			switch (event.key.toLowerCase()) {
+				case "#": {
+					if (this.node.depth < 6) {
+						this.node.depth += 1
+						return true
+					}
+					return change
+				}
+				case "backspace": {
+					if (this.node.depth > 1) {
+						this.node.depth -= 1
+						return true
+					} else {
+						delete this.node.depth
+						this.node.type = "paragraph"
+						return true
+					}
+				}
+			}
+		}
+		return change
 	}
 
 	connectedCallback() {
-		let style = html`<style>
-			${[1, 2, 3, 4, 5, 6].map(n => {
-				return `h${n}::before {
-					content: "${"#".repeat(n)} ";
-					font-family: ibm plex mono, monospace;
-					font-style: italic;
-					display: inline-block;
-					font-size: 0.8em;
-					color: #77c;
-				}`
-			})}
-		</style>`
-
-		render(style, this.styleHole)
+		super.connectedCallback()
 	}
 }

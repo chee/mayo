@@ -1,5 +1,9 @@
-import {target, targets} from "@github/catalyst"
-import {render, html} from "@github/jtml"
-export default class MayoEmphasisElement extends HTMLElement {
-	connectedCallback() {}
+import {MayoParentElement} from "./mayo-element"
+import type * as md from "mdast"
+
+export default class MayoEmphasisElement extends MayoParentElement<md.Emphasis> {
+	type = "inline" as const
+	connectedCallback() {
+		super.connectedCallback()
+	}
 }
