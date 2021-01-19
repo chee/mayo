@@ -1,5 +1,8 @@
-import {target, targets} from "@github/catalyst"
-import {render, html} from "@github/jtml"
-export default class MayoYamlElement extends HTMLElement {
-	connectedCallback() {}
+import {MayoLiteralElement} from "./mayo-element"
+import * as md from "mdast"
+
+export default class MayoYamlElement extends MayoLiteralElement<md.FrontmatterContent> {
+	connectedCallback() {
+		super.connectedCallback()
+	}
 }

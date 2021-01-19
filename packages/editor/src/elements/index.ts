@@ -1,12 +1,8 @@
 import MayoBreakElement from "./markdown/mayo-break"
 import MayoCodeElement from "./markdown/mayo-code"
 import MayoInlineCodeElement from "./markdown/mayo-inline-code"
-import MayoDefinitionElement from "./markdown/mayo-definition"
 import MayoDeleteElement from "./markdown/mayo-delete"
 import MayoEmphasisElement from "./markdown/mayo-emphasis"
-import MayoFootnoteDefinitionElement from "./markdown/mayo-footnote-definition"
-import MayoFootnoteElement from "./markdown/mayo-footnote"
-import MayoFootnoteReferenceElement from "./markdown/mayo-footnote-reference"
 import MayoHeadingElement from "./markdown/mayo-heading"
 import MayoThematicBreakElement from "./markdown/mayo-thematic-break"
 import MayoHtmlElement from "./markdown/mayo-html"
@@ -18,7 +14,6 @@ import MayoLinkReferenceElement from "./markdown/mayo-link-reference"
 import MayoListElement from "./markdown/mayo-list"
 import MayoParagraphElement from "./markdown/mayo-paragraph"
 import MayoBlockquoteElement from "./markdown/mayo-blockquote"
-import MayoRootElement from "./markdown/mayo-root"
 import MayoStrongElement from "./markdown/mayo-strong"
 import MayoTableElement from "./markdown/mayo-table"
 import MayoTextElement from "./markdown/mayo-text"
@@ -28,6 +23,7 @@ import MayoYamlElement from "./markdown/mayo-yaml"
 import MayoSidebarElement from "./mayo-sidebar"
 import MayoSidebarFileElement from "./mayo-sidebar-file"
 import MayoDocumentElement from "./mayo-document"
+import MayoKillerElement from "./mayo-killer"
 import {MayoElement, MayoParentElement} from "./markdown/mayo-element"
 
 export type MayoStaticPhrasingContentElement =
@@ -47,8 +43,6 @@ export type MayoPhrasingContentElement =
 
 export type MayoListContentElement = MayoListItemElement
 
-export type MayoContentElement = MayoDefinitionElement | MayoParagraphElement
-
 export type MayoFlowContentElement =
 	| MayoBlockquoteElement
 	| MayoCodeElement
@@ -56,25 +50,22 @@ export type MayoFlowContentElement =
 	| MayoHtmlElement
 	| MayoListElement
 	| MayoThematicBreakElement
-	| MayoContentElement
+	| MayoParagraphElement
 
-export type MayoMdastContentElement =
+export type MayoContentElement =
 	| MayoFlowContentElement
 	| MayoListContentElement
 	| MayoPhrasingContentElement
 
 export type {
 	MayoDocumentElement,
+	MayoKillerElement,
 	MayoSidebarElement,
 	MayoSidebarFileElement,
 	MayoBreakElement,
 	MayoCodeElement,
-	MayoDefinitionElement,
 	MayoDeleteElement,
 	MayoEmphasisElement,
-	MayoFootnoteDefinitionElement,
-	MayoFootnoteElement,
-	MayoFootnoteReferenceElement,
 	MayoHeadingElement,
 	MayoInlineCodeElement,
 	MayoThematicBreakElement,
@@ -87,7 +78,6 @@ export type {
 	MayoListElement,
 	MayoParagraphElement,
 	MayoBlockquoteElement,
-	MayoRootElement,
 	MayoStrongElement,
 	MayoTableElement,
 	MayoTextElement,
@@ -97,17 +87,11 @@ export type {
 
 export default [
 	MayoDocumentElement,
-	MayoSidebarElement,
-	MayoSidebarFileElement,
 	MayoBreakElement,
 	MayoCodeElement,
 	MayoInlineCodeElement,
-	MayoDefinitionElement,
 	MayoDeleteElement,
 	MayoEmphasisElement,
-	MayoFootnoteDefinitionElement,
-	MayoFootnoteElement,
-	MayoFootnoteReferenceElement,
 	MayoHeadingElement,
 	MayoThematicBreakElement,
 	MayoHtmlElement,
@@ -119,7 +103,6 @@ export default [
 	MayoListElement,
 	MayoParagraphElement,
 	MayoBlockquoteElement,
-	MayoRootElement,
 	MayoStrongElement,
 	MayoTableElement,
 	MayoTextElement,
@@ -129,11 +112,12 @@ export default [
 
 export interface BeforeInputEvent extends InputEvent {
 	getTargetRanges(): StaticRange[]
+	dataTransfer: DataTransfer
 }
 
 export type CaretInstruction =
 	| CaretIdInstruction
-	| CaretElementInstruction
+	| CaretParentInstruction
 	| CaretTextInstruction
 
 export interface CaretIdInstruction {
@@ -148,10 +132,10 @@ export interface CaretIdInstruction {
 	endOffset?: number
 }
 
-export interface CaretElementInstruction {
-	type: "element"
+export interface CaretParentInstruction {
+	type: "parent"
 	// the parent element to move to
-	element: MayoParentElement<any>
+	parent: MayoParentElement<any>
 	// the index of the child in that parent element
 	index: number
 	// where the selection range should start

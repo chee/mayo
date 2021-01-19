@@ -1,45 +1,64 @@
 import {MayoParentElement} from "./mayo-element"
 import * as md from "mdast"
 import u from "unist-builder"
+import {CaretInstruction} from ".."
+import shortid from "shortid"
 
 export default class MayoParagraphElement extends MayoParentElement<md.Paragraph> {
-	type = "block" as const
-
-	handleKeydown(selection: Selection, event: KeyboardEvent): boolean {
-		let change = super.handleKeydown(selection, event)
-		let atBeginning =
-			selection.focusOffset == 0 &&
-			this.interestingChildren.indexOf(selection.focusNode! as ChildNode) == 0
+	selfInsertText(text: string, range: StaticRange): CaretInstruction {
+		let atBeginning = this.atBeginningOfBlock(range)
+		let id = shortid()
+		let caret: CaretInstruction = {
+			type: "id",
+			id,
+			index: 0,
+			startOffset: 0,
+		}
 
 		if (atBeginning) {
-			switch (event.key.toLowerCase()) {
+			switch (text) {
 				case "#": {
 					this.node.depth = 1
+					// @ts-ignore
 					this.node.type = "heading"
-					return true
+					this.node.id = id
+					return caret
 				}
 				case ">": {
-					this.node.children = [{...this.node}]
+					this.node.children = [
+						// @ts-ignore
+						{
+							...this.node,
+							id,
+						},
+					]
+					// @ts-ignore
 					this.node.type = "blockquote"
-					return true
+					return caret
 				}
 				case "-": {
-					this.node.children = [u("listItem", [{...this.node}])]
+					this.node.children = [
+						// @ts-ignore
+						u("listItem", [{...this.node, id}]),
+					]
+					// @ts-ignore
 					this.node.type = "list"
 					this.node.ordered = false
-					return true
+					return caret
 				}
-				case "1": {
-					this.node.children = [u("listItem", [{...this.node}])]
+				case ".": {
+					this.node.children = [
+						// @ts-ignore
+						u("listItem", [{...this.node, id}]),
+					]
+					// @ts-ignore
 					this.node.type = "list"
 					this.node.ordered = true
-					return true
+					return caret
 				}
 			}
-		} else {
-			return change
 		}
-		return change
+		return super.selfInsertText(text, range)
 	}
 	connectedCallback() {
 		super.connectedCallback()

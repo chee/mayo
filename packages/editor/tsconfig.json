@@ -12,8 +12,7 @@
 		"moduleResolution": "Node",
 		"allowSyntheticDefaultImports": true,
 		"outDir": "./dist",
-		"allowJs": true,
-		"sourceMap": true
+		"allowJs": true
 	},
 	"include": [
 		"src/*"

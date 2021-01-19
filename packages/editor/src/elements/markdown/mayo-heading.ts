@@ -1,61 +1,34 @@
-import {target} from "@github/catalyst"
-import {render, html, TemplateResult} from "lit-html"
-import {templateContent} from "lit-html/directives/template-content"
-import {CaretInstruction, MayoMdastContentElement} from ".."
+import {CaretInstruction} from ".."
 import type * as md from "mdast"
 import {MayoParentElement} from "./mayo-element"
+import {property} from "lit-element"
 
 export default class MayoHeadingElement extends MayoParentElement<md.Heading> {
-	type = "block" as const
+	get depth() {
+		return this.node.depth
+	}
+
+	set depth(val: 1 | 2 | 3 | 4 | 5 | 6) {
+		this.node.depth = val
+	}
 
 	selfInsertText(text: string, range: StaticRange): CaretInstruction {
-		if (text == "#" && this.atBeginningOfBlock_(range)) {
-			if (this.node.depth < 6) {
-				this.node.depth += 1
+		if (text == "#" && this.atBeginningOfBlock(range)) {
+			if (this.depth < 6) {
+				this.depth += 1
 			}
 			return {
-				type: "element",
-				element: this,
+				type: "parent",
+				parent: this,
 				index: 0,
 				startOffset: 0,
 			}
-		} else {
-			return super.selfInsertText(text, range)
 		}
-	}
-
-	/**
-	 * @param selection the current selection
-	 * @param event the event
-	 * @returns whether or not the event caused a transformation
-	 */
-	handleKeydown(selection: Selection, event: KeyboardEvent): boolean {
-		let change = super.handleKeydown(selection, event)
-		if (this.atBeginningOfBlock(selection)) {
-			switch (event.key.toLowerCase()) {
-				case "#": {
-					if (this.node.depth < 6) {
-						this.node.depth += 1
-						return true
-					}
-					return change
-				}
-				case "backspace": {
-					if (this.node.depth > 1) {
-						this.node.depth -= 1
-						return true
-					} else {
-						delete this.node.depth
-						this.node.type = "paragraph"
-						return true
-					}
-				}
-			}
-		}
-		return change
+		return super.selfInsertText(text, range)
 	}
 
 	connectedCallback() {
 		super.connectedCallback()
+		console.log(this.depth)
 	}
 }

@@ -1,10 +1,11 @@
-import {targets} from "@github/catalyst"
-import {render, html} from "@github/jtml"
+import {LitElement, html, css, customElement, property} from "lit-element"
 
-export default class MayoSidebarFileElement extends HTMLElement {
-	@targets links: Array<HTMLElement>
-	get css() {
-		return html`<style>
+@customElement("mayo-sidebar-file")
+export default class MayoSidebarFileElement extends LitElement {
+	@property()
+	path: string
+	static get styles() {
+		return css`
 			.link {
 				text-decoration: none;
 				color: #006;
@@ -25,21 +26,14 @@ export default class MayoSidebarFileElement extends HTMLElement {
 				content: ".";
 				display: inline;
 			}
-		</style>`
+		`
 	}
-	get path() {
-		return this.getAttribute("path")
-	}
-	get html() {
+	render() {
 		let [name, ext] = this.path!.split(".")
 
-		return html`${this.css}
-			<a href="${this.path!}" class="link">
-				<span class="name">${name}</span>
-				<span class="ext">${ext}</span>
-			</a> `
-	}
-	connectedCallback() {
-		render(this.html, this.shadowRoot!)
+		return html`<a href="${this.path!}" class="link">
+			<span class="name">${name}</span>
+			<span class="ext">${ext}</span>
+		</a>`
 	}
 }

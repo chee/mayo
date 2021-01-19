@@ -1,14 +1,8 @@
-import {target, targets} from "@github/catalyst"
-import {render, html} from "@github/jtml"
-export default class MayoListItemElement extends HTMLElement {
-	@target root: HTMLElement
+import {MayoParentElement} from "./mayo-element"
+import * as md from "mdast"
+
+export default class MayoListItemElement extends MayoParentElement<md.ListItem> {
 	connectedCallback() {
-		// let style = document.createElement("style")
-		// style.innerHTML = `
-		// 	li {
-		// 		display: block;
-		// 	}
-		// `
-		// this.shadowRoot!.append(style)
+		super.connectedCallback()
 	}
 }

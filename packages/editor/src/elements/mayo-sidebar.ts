@@ -1,35 +1,47 @@
-import {repeat} from "lit-html/directives/repeat"
-import {target, targets} from "@github/catalyst"
-import {render, html} from "lit-html"
-import MayoSidebarFileElement from "./mayo-sidebar-file"
+import {LitElement, html, css, customElement, property} from "lit-element"
 
-export default class MayoSidebarElement extends HTMLElement {
-	@targets files: Array<typeof MayoSidebarFileElement>
-	@target list: HTMLUListElement
-	getFilePaths() {
-		return ["fish.md", "monkey.md"]
+@customElement("mayo-sidebar")
+export default class MayoSidebarElement extends LitElement {
+	@property({type: Array})
+	paths = ["fish.md", "monkey.md"]
+
+	static get styles() {
+		return css`
+			* {
+				box-sizing: border-box;
+			}
+
+			nav {
+				overflow: hidden;
+				width: 200px;
+				background: #ffe9ed;
+				color: #c36;
+				height: 100%;
+				padding: 1em;
+				font-size: 0.9em;
+				resize: horizontal;
+			}
+
+			ul {
+				list-style: none;
+				padding: 0;
+			}
+		`
 	}
 
-	update() {
-		if (!this.list) {
-			return
-		}
-		render(
-			repeat(
-				this.getFilePaths(),
-				path => html`
-					<li>
-						<mayo-sidebar-file path="${path}">
-							<template data-shadowroot></template>
-						</mayo-sidebar-file>
-					</li>
-				`
-			),
-			this.list
-		)
-	}
-
-	connectedCallback() {
-		this.update()
+	render() {
+		return html`
+			<nav>
+				<ul>
+					${this.paths.map(
+						path => html`<li>
+							<mayo-sidebar-file path="${path}">
+								<template data-shadowroot></template>
+							</mayo-sidebar-file>
+						</li>`
+					)}
+				</ul>
+			</nav>
+		`
 	}
 }

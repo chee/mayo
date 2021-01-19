@@ -1,6 +1,6 @@
-import {target, targets} from "@github/catalyst"
-import {render, html} from "@github/jtml"
-export default class MayoTableElement extends HTMLElement {
-	@target root: HTMLElement
+import {MayoParentElement} from "./mayo-element"
+import * as md from "mdast"
+
+export default class MayoTableElement extends MayoParentElement<md.Table> {
 	connectedCallback() {}
 }

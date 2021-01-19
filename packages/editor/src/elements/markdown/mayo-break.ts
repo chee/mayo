@@ -1,5 +1,7 @@
-import {target, targets} from "@github/catalyst"
-import {render, html} from "@github/jtml"
-export default class MayoBreakElement extends HTMLElement {
-	connectedCallback() {}
+import * as md from "mdast"
+import {MayoEmptyElement} from "./mayo-element"
+export default class MayoBreakElement extends MayoEmptyElement<md.Break> {
+	connectedCallback() {
+		super.connectedCallback()
+	}
 }

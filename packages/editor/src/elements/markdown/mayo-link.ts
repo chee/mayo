@@ -1,6 +1,7 @@
-import {target, targets} from "@github/catalyst"
-import {render, html} from "@github/jtml"
-export default class MayoLinkElement extends HTMLElement {
-	@target root: HTMLAnchorElement
-	connectedCallback() {}
+import * as md from "mdast"
+import {MayoEmptyElement} from "./mayo-element"
+export default class MayoLinkElement extends MayoEmptyElement<md.Link> {
+	connectedCallback() {
+		super.connectedCallback()
+	}
 }

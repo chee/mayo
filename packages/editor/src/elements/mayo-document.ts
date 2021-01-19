@@ -2,120 +2,82 @@ import parse from "mdast-util-from-markdown"
 import convertToHtml from "../convert-to-html"
 import toMarkdown from "mdast-util-to-markdown"
 import type * as md from "mdast"
-import {target, targets} from "@github/catalyst"
-import cloneDeep from "clone-deep"
+import {target} from "@github/catalyst"
 import shortId from "shortid"
 import type {
-	MayoBreakElement,
-	MayoCodeElement,
-	MayoInlineCodeElement,
-	MayoDefinitionElement,
-	MayoDeleteElement,
-	MayoEmphasisElement,
-	MayoFootnoteDefinitionElement,
-	MayoFootnoteElement,
-	MayoFootnoteReferenceElement,
-	MayoHeadingElement,
-	MayoThematicBreakElement,
-	MayoHtmlElement,
-	MayoImageElement,
-	MayoImageReferenceElement,
-	MayoListItemElement,
-	MayoLinkElement,
-	MayoLinkReferenceElement,
-	MayoListElement,
-	MayoParagraphElement,
-	MayoBlockquoteElement,
-	MayoFlowContentElement,
-	MayoPhrasingContentElement,
-	MayoRootElement,
-	MayoStrongElement,
-	MayoTableElement,
-	MayoTextElement,
-	MayoTomlElement,
-	MayoYamlElement,
-	MayoContentElement,
-	MayoMdastContentElement,
 	BeforeInputEvent,
 	CaretInstruction,
+	MayoContentElement,
 } from "./index"
-import {getMayoName, find, remove, pairSymbolFor} from "../utils"
 import {html, render} from "lit-html"
 import u from "unist-builder"
-import {MayoParentElement} from "./markdown/mayo-element"
+import {MayoElement, MayoParentElement} from "./markdown/mayo-element"
+// TODO learn how to declare types for this
+// @ts-ignore
+import compact from "mdast-util-compact"
+import {visit} from "unist-utils-core"
 
 export default class MayoDocumentElement extends HTMLElement {
 	@target document: HTMLElement
-	@targets blockquotes: MayoBlockquoteElement[]
-	@targets breaks: MayoBreakElement[]
-	@targets codes: MayoCodeElement[]
-	@targets deletes: MayoDeleteElement[]
-	@targets emphasiss: MayoEmphasisElement[]
-	@targets footnoteReferences: MayoFootnoteReferenceElement[]
-	@targets footnotes: MayoFootnoteElement[]
-	@targets headings: MayoHeadingElement[]
-	@targets htmls: MayoHtmlElement[]
-	@targets imageReferences: MayoImageReferenceElement[]
-	@targets images: MayoImageElement[]
-	@targets inlineCodes: MayoInlineCodeElement[]
-	@targets linkReferences: MayoLinkReferenceElement[]
-	@targets links: MayoLinkElement[]
-	@targets listItems: MayoListItemElement[]
-	@targets lists: MayoListElement[]
-	@targets paragraphs: MayoParagraphElement[]
-	@targets roots: MayoRootElement[]
-	@targets strongs: MayoStrongElement[]
-	@targets tables: MayoTableElement[]
-	@targets texts: MayoTextElement[]
-	@targets thematicBreaks: MayoThematicBreakElement[]
-	@targets tomls: MayoTomlElement[]
-	@targets yamls: MayoYamlElement[]
-	@targets definitions: MayoDefinitionElement[]
-	@targets footnoteDefinitions: MayoFootnoteDefinitionElement[]
-	@target activeBlock: MayoFlowContentElement
 	ast: md.Root
 	content = ""
 
-	select(event: MouseEvent) {
-		if (this.activeBlock) {
-			delete this.activeBlock.dataset.target
-		}
-		let element = event.currentTarget! as MayoMdastContentElement
-
-		element.dataset.target = "mayo-document.activeBlock"
-
-		let sel = document.getSelection()
-		let offset = sel?.focusOffset
+	get interestingChildren(): Node[] {
+		return Array.from(this.document.childNodes).filter(
+			n => "node" in n || n.nodeName == "#text"
+		)
 	}
 
-	insertParagraph(event: CustomEvent) {
-		let element = event.target
-		let range = event.detail.range
-		console.log({element, range})
-	}
+	// straightUpWingTheSelection() {
+	// 	let selection = document.getSelection()!
+	// 	// TODO have the cases define a fixcaret fn
+	// 	if (selection.focusNode == this.document) {
+	// 		let block = this.document.children[
+	// 			startBlockIndex
+	// 		] as MayoContentElement
+	// 		let node = block.interestingChildren[startElementIndex]
+	// 		selection.getRangeAt(0).setStart(node, range.startOffset + 1)
+	// 		selection.getRangeAt(0).setEnd(node, range.startOffset + 1)
+	// 	} else if (selection.focusNode == range.startContainer) {
+	// 		selection.getRangeAt(0).setStart(selection.focusNode, range.startOffset + 1)
+	// 		selection.getRangeAt(0).setEnd(selection.focusNode, range.startOffset + 1)
+	// 	} else {
+	// 		console.log(
+	// 			selection.focusNode,
+	// 			"...is the focus node btw, compared to",
+	// 			range.startContainer
+	// 		)
+	// 		selection
+	// 			.getRangeAt(0)
+	// 			.setStart(range.startContainer, range.startOffset + 1)
+	// 		selection.getRangeAt(0).setEnd(selection.focusNode, range.startOffset + 1)
+	// 	}
+	// }
 
 	updateSelection(caret: CaretInstruction | null) {
 		let selection = document.getSelection()!
 		if (caret) {
 			let target: Text | null = null
 			if (caret && caret.type == "id") {
-				let parent = this.shadowRoot!.getElementById(
+				let parent = document.getElementById(
 					caret.id
 				) as MayoParentElement<any>
 				target = parent.interestingChildren[caret.index] as Text
-			} else if (caret && caret.type == "element") {
-				target = caret.element.interestingChildren[caret.index] as Text
+			} else if (caret && caret.type == "parent") {
+				target = caret.parent.interestingChildren[caret.index] as Text
 			} else if (caret && caret.type == "text") {
 				target = caret.element
 			}
 			if (target) {
-				console.log(target)
 				selection.removeAllRanges()
-				let r = document.createRange()
-				r.setStart(target, caret ? caret.startOffset : 0)
-				selection.addRange(r)
+				let range = document.createRange()
+				range.setStart(target, caret ? caret.startOffset : 0)
+				selection.addRange(range)
 			}
+		} else {
+			// this.straightUpWingTheSelection()
 		}
+		console.log(selection)
 	}
 
 	handleInput(event: BeforeInputEvent) {
@@ -127,9 +89,8 @@ export default class MayoDocumentElement extends HTMLElement {
 		let isRange = !isCaret
 
 		let startElement = range.startContainer
-			.parentElement! as MayoMdastContentElement
-		let endElement = range.endContainer
-			.parentElement! as MayoMdastContentElement
+			.parentElement! as MayoContentElement
+		let endElement = range.endContainer.parentElement! as MayoContentElement
 
 		let startNode: md.Content = startElement.node
 		let endNode: md.Content = startElement.node
@@ -139,14 +100,14 @@ export default class MayoDocumentElement extends HTMLElement {
 				? startElement
 				: (startElement.closest(
 						'[mayo-type="block"]'
-				  )! as MayoMdastContentElement)
+				  )! as MayoParentElement<any>)
 
 		let endBlockElement =
 			endElement.type == "block"
 				? endElement
 				: (endElement.closest(
 						'[mayo-type="block"]'
-				  )! as MayoMdastContentElement)
+				  )! as MayoParentElement<any>)
 
 		// the index of the start block in the mayo-document (y)
 		let startBlockIndex = Array.from(this.document.children).indexOf(
@@ -178,77 +139,107 @@ export default class MayoDocumentElement extends HTMLElement {
 			)
 		}
 		switch (event.inputType) {
+			case "insertReplacementText":
+				event.dataTransfer.items[0].getAsString(text => {
+					startElement.selfInsertText(text, range)
+					this.setAttribute("dirty", "true")
+					this.update()
+				})
+				break
 			case "insertText": {
 				let caret: CaretInstruction | null = null
 				if (range.startContainer == range.endContainer) {
-					// TODO expect caret instructions as a return value
-					caret = startElement.selfInsertText(event.data, range)
+					caret = startElement.selfInsertText(event.data || "", range)
 					event.preventDefault()
 				} else if (startBlockElement == endBlockElement) {
-					caret = startBlockElement.insertTextAsCommonAncestor(
+					caret = (startBlockElement as MayoParentElement<any>).insertTextAsCommonAncestor(
 						startElement,
 						endElement,
-						event.data,
+						event.data || "",
 						range
 					)
+				} else {
+					// TODO this is a textInsert across blocks, sounds hard
 				}
 
 				this.setAttribute("dirty", "true")
 				this.update()
 				this.updateSelection(caret)
-
-				// let sel = document.getSelection()!
-				// // TODO have the cases define a fixcaret fn
-				// if (sel.focusNode == this.document) {
-				// 	let block = this.document.children[
-				// 		startBlockIndex
-				// 	] as MayoMdastContentElement
-				// 	let node = block.interestingChildren[startElementIndex]
-				// 	sel.getRangeAt(0).setStart(node, range.startOffset + 1)
-				// 	sel.getRangeAt(0).setEnd(node, range.startOffset + 1)
-				// } else if (sel.focusNode == range.startContainer) {
-				// 	sel.getRangeAt(0).setStart(sel.focusNode, range.startOffset + 1)
-				// 	sel.getRangeAt(0).setEnd(sel.focusNode, range.startOffset + 1)
-				// } else {
-				// 	console.log(
-				// 		sel.focusNode,
-				// 		"...is the focus node btw, compared to",
-				// 		range.startContainer
-				// 	)
-				// 	sel
-				// 		.getRangeAt(0)
-				// 		.setStart(range.startContainer, range.startOffset + 1)
-				// 	sel.getRangeAt(0).setEnd(sel.focusNode, range.startOffset + 1)
-				// }
 				break
 			}
-			case "insertReplacementText":
 			case "insertLineBreak": {
 				let index = startBlockElement.interestingChildren.indexOf(startElement)
 				startBlockElement.node.children.splice(index + 1, 0, u("break"))
+				this.setAttribute("dirty", "true")
 				this.update()
 				event.preventDefault()
 				break
 			}
 			case "insertParagraph": {
-				let index = this.ast.children.indexOf(startBlockElement.node)
 				let id = shortId()
-				this.ast.children.splice(
-					index + 1,
-					0,
-					u("paragraph", {id}, [u("text", " ")])
+				visit(
+					this.ast,
+					range.startContainer.parentElement.node,
+					(node, index, parents) => {
+						console.log(node, index, parents)
+					}
 				)
+				this.setAttribute("dirty", "true")
 				this.update()
-				event.preventDefault()
-				let sel = document.getSelection()!
-				sel
-					.getRangeAt(0)
-					.setStart(
-						this.shadowRoot!.getElementById(id).interestingChildren[0],
-						0
-					)
+				this.updateSelection({
+					type: "id" as const,
+					id,
+					index: 0,
+					startOffset: 0,
+				})
 				break
 			}
+			case "deleteContentBackward": {
+				let atStartOfSomeChild =
+					range.startContainer == range.endContainer &&
+					"node" in range.startContainer
+				let child = range.startContainer as MayoElement<md.PhrasingContent>
+				console.log(range)
+				let index = startElement.interestingChildren.indexOf(child)
+
+				if (atStartOfSomeChild) {
+					switch (child.node.type) {
+						case "strong":
+						case "emphasis":
+						case "delete":
+							startElement.node.children.splice(
+								index,
+								1,
+								...child.node.children
+							)
+							this.update()
+							event.preventDefault()
+							break
+						case "inlineCode":
+							child.node.type = "text"
+							this.update()
+							event.preventDefault()
+							break
+					}
+					this.updateSelection({
+						type: "parent",
+						parent: startBlockElement,
+						index: index,
+						startOffset: 0,
+					})
+				} else if (range.startContainer == range.endContainer) {
+					let caret = startElement.selfDeleteContentBackward(range)
+					this.setAttribute("dirty", "true")
+					this.update()
+					this.updateSelection(caret)
+				}
+				break
+			}
+			case "deleteContentForward": {
+				let atStartOfBlock =
+					startElement == startBlockElement && range.collapsed
+			}
+			case "deleteByCut":
 			case "insertOrderedList":
 			case "insertUnorderedList":
 			case "insertHorizontalRule":
@@ -267,10 +258,7 @@ export default class MayoDocumentElement extends HTMLElement {
 			case "deleteHardLineBackward":
 			case "deleteHardLineForward":
 			case "deleteByDrag":
-			case "deleteByCut":
 			case "deleteContent":
-			case "deleteContentBackward":
-			case "deleteContentForward":
 			case "historyUndo":
 			case "historyRedo":
 			case "formatBold":
@@ -298,63 +286,13 @@ export default class MayoDocumentElement extends HTMLElement {
 		//this.updateForTransform(event)
 	}
 
-	getCaretCoördinate() {
-		let sel = document.getSelection()
-		let focusNode = sel?.focusNode!
-		let offset = sel?.focusOffset!
-		let mayoNode = focusNode.parentElement! as MayoMdastContentElement
-		let type = mayoNode?.getAttribute("mayo-type")
-		let closestBlock = mayoNode
-		if (type == "inline") {
-			let closest = mayoNode.closest('[mayo-type="block"]')
-			if (!closest) {
-				throw new Error("couldn't find an enclosing block :(")
-			}
-			closestBlock = closest as MayoMdastContentElement
-		}
-		let blockIndex = Array.from(this.document.children).indexOf(closestBlock)
-		let nodeIndex = 0
-		if (type == "inline") {
-			nodeIndex = closestBlock.interestingChildren.indexOf(mayoNode)
-		} else if (type == "block") {
-			nodeIndex = closestBlock.interestingChildren.indexOf(focusNode)
-		} else {
-			console.error(
-				`don't know what to do with a block that isn't inline or block re: ${mayoNode.tagName}`
-			)
-		}
-		return {blockIndex, nodeIndex, offset}
-	}
-
-	updateForTransform(event: Event) {
-		event.preventDefault()
-		// let coördinate = this.getCaretCoördinate()
-		// let sel = document.getSelection()
-		// let preUpdateNode = sel?.focusNode!
-		// let preUpdateOffset = sel?.focusOffset!
+	updateForTransform(caret: CaretInstruction) {
 		this.setAttribute("dirty", "true")
 		this.update()
-		// if (sel?.focusNode == this.document) {
-		// 	let block = this.document.children[coördinate.blockIndex]
-		// 	let node = block.interestingChildren[coördinate.nodeIndex]
-		// 	sel?.getRangeAt(0)?.setStart(node, coördinate.offset)
-		// } else if (sel?.focusNode == preUpdateNode) {
-		// 	sel?.getRangeAt(0)?.setStart(preUpdateNode, preUpdateOffset)
-		// }
+		this.updateSelection(caret)
 	}
 
 	handleKeydown(event: KeyboardEvent) {
-		let selection = document.getSelection()!
-		let isCaret = selection!.anchorOffset == selection!.focusOffset
-		let isRange = !isCaret
-		let element = selection.focusNode
-			?.parentElement! as MayoMdastContentElement
-		// if ("handleKeydown" in element) {
-		// 	let change = element.handleKeydown(selection, event)
-		// 	if (change) {
-		// 		this.updateForTransform(event)
-		// 	}
-		// }
 		if (event.key == "s" && (event.ctrlKey || event.metaKey)) {
 			this.save()
 			event.preventDefault()
@@ -367,11 +305,26 @@ export default class MayoDocumentElement extends HTMLElement {
 	}
 
 	update() {
-		render(convertToHtml(this.ast), this.document)
+		this.ast = compact(this.ast)
+		render(convertToHtml(this.ast, this.ast), this.document)
 		// TODO show symbols for the node the caret is in
 	}
 
 	connectedCallback() {
+		render(
+			html`<article
+				id="doc"
+				contenteditable
+				block
+				container
+				data-target="mayo-document.document"
+				data-action="beforeinput:mayo-document#handleInput keydown:mayo-document#handleKeydown"
+			></article>`,
+			this
+		)
+
+		//this.document = document.getElementById("doc")
+
 		let file = localStorage.getItem("file")
 		if (!file) {
 			file = `# hello \`this\` and _that_ (and \`others\`)
@@ -394,6 +347,8 @@ here of _interest to you_, or me, or anybody else.
 
 - one
 
+images like ![dog in hat](https://i.pinimg.com/originals/c1/40/6f/c1406f93f49e896ff7c54c26bbfda047.jpg) and so on
+
 > help
 > this is why i need help
 
@@ -408,14 +363,9 @@ auto sum(std::vector<int> nums) {
 \`\`\`
 `
 		}
-		this.ast = parse(file)
+		this.ast = compact(parse(file))
 
 		localStorage.setItem("file", toMarkdown(this.ast))
 		this.update()
-
-		// setInterval(() => {
-		// 	this.ast.children[0].depth = Math.floor(Math.random() * 5) + 1
-		// 	this.update()
-		// }, 3000)
 	}
 }

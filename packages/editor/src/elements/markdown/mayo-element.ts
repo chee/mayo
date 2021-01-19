@@ -1,23 +1,40 @@
 import type * as md from "mdast"
 import type * as unist from "unist"
-import {find, pairSymbolFor, toString} from "../../utils"
-import u from "unist-builder"
-import {CaretInstruction, MayoMdastContentElement} from ".."
-import shortId from "shortid"
+import {demoteFully, split} from "../../utils"
+import {CaretInstruction, MayoContentElement} from ".."
 export abstract class MayoElement<
 	AstNodeType extends unist.Node
 > extends HTMLElement {
 	node: AstNodeType
-	type: "inline" | "block"
+	get value() {
+		return this.getAttribute("value")
+	}
+
+	get type() {
+		return this.getAttribute("type")
+	}
+
+	get block() {
+		return this.hasAttribute("block")
+	}
+
+	get leaf() {
+		return this.hasAttribute("leaf")
+	}
+
+	get container() {
+		return this.hasAttribute("container")
+	}
+
+	get inline() {
+		return this.hasAttribute("inline")
+	}
 
 	get interestingChildren(): Node[] {
 		return Array.from(this.childNodes).filter(
 			n => "node" in n || n.nodeName == "#text"
 		)
 	}
-
-	abstract handleKeydown(selection: Selection, event: KeyboardEvent): boolean
-
 	/**
 	 * Insert text when the range start and end are both in a single element
 	 * @param text the text to insert
@@ -25,15 +42,26 @@ export abstract class MayoElement<
 	 */
 	abstract selfInsertText(text: string, range: StaticRange): CaretInstruction
 
-	connectedCallback() {
-		this.setAttribute("mayo-type", this.type)
+	connectedCallback() {}
+}
+
+export class MayoEmptyElement<
+	AstNodeType extends
+		| md.ImageReference
+		| md.LinkReference
+		| md.Link
+		| md.Break
+		| md.ThematicBreak
+		| md.Image
+> extends MayoElement<AstNodeType> {
+	selfInsertText(_text: string, _range: StaticRange): CaretInstruction {
+		throw new Error("empty elements")
 	}
 }
 
 export class MayoLiteralElement<
 	AstNodeType extends md.Literal
 > extends MayoElement<AstNodeType> {
-	type = "inline" as const
 	insertText(selection: Selection, event: InputEvent) {
 		let special = event.data!.match(/[~`*_]/)
 		if (special) {
@@ -42,10 +70,6 @@ export class MayoLiteralElement<
 			this.node.value = selection.focusNode!.nodeValue || ""
 			return true
 		}
-	}
-
-	handleKeydown(selection: Selection, event: KeyboardEvent) {
-		return false
 	}
 
 	selfInsertText(text: string, range: StaticRange): CaretInstruction {
@@ -59,71 +83,28 @@ export class MayoLiteralElement<
 			startOffset: range.startOffset + 1,
 		}
 	}
+
+	selfDeleteContentBackward(range: StaticRange): CaretInstruction {
+		this.node.value =
+			this.node.value.slice(0, range.startOffset) +
+			this.node.value.slice(range.endOffset)
+		return {
+			type: "text",
+			element: this.interestingChildren[0] as Text,
+			startOffset: range.startOffset,
+		}
+	}
 }
 
 export class MayoParentElement<
 	AstNodeType extends md.Parent
 > extends MayoElement<AstNodeType> {
-	atBeginningOfTextNode(selection: Selection) {
-		return selection.focusOffset == 0
-	}
-
-	indexOfTextNode(selection: Selection) {
-		return this.interestingChildren.indexOf(selection.focusNode! as ChildNode)
-	}
-
-	atBeginningOfBlock(selection: Selection) {
-		return (
-			this.atBeginningOfTextNode(selection) &&
-			this.indexOfTextNode(selection) == 0
-		)
-	}
-
-	atBeginningOfBlock_(range: StaticRange): boolean {
+	atBeginningOfBlock(range: StaticRange): boolean {
 		return (
 			range.collapsed &&
 			this.interestingChildren.indexOf(range.startContainer) == 0 &&
 			range.startOffset == 0
 		)
-	}
-
-	handleKeydown(selection: Selection, event: KeyboardEvent): boolean {
-		// TODO go up until you find a block element for the Ctrl-a Ctrl-e bindings
-
-		if (
-			this.atBeginningOfTextNode(selection) &&
-			!this.atBeginningOfBlock(selection)
-		) {
-			switch (event.key.toLowerCase()) {
-				case "backspace": {
-					let previousIndex = this.indexOfTextNode(selection) - 1
-					let previousNode = this.node.children[previousIndex]
-					if (previousNode.type == "inlineCode") {
-						previousNode.value =
-							pairSymbolFor(previousNode) + previousNode.value
-						previousNode.type = "text"
-
-						return true
-					} else if (
-						previousNode.type == "emphasis" ||
-						previousNode.type == "strong" ||
-						previousNode.type == "delete"
-					) {
-						this.node.children.splice(
-							previousIndex,
-							1,
-							...previousNode.children
-						)
-
-						previousNode.value =
-							pairSymbolFor(previousNode) + previousNode.value
-						this.node
-						return true
-					}
-				}
-			}
-		}
-		return false
 	}
 
 	selfInsertText(text: string, range: StaticRange): CaretInstruction {
@@ -146,121 +127,117 @@ export class MayoParentElement<
 			targetAstNode.value.slice(range.endOffset)
 
 		let caret = {
-			type: "element" as const,
-			element: this,
+			type: "parent" as const,
+			parent: this,
 			index: targetIndex,
 			startOffset: range.startOffset + 1,
 		}
 
 		return caret
+		// TODO replace this with code that creates a code node when you press `
+		// let ticks = targetAstNode.value.match(/(\s)`([^`]+)`(\s)/)
 
-		let ticks = targetAstNode.value.match(/(\s)`([^`]+)`(\s)/)
+		// if (ticks) {
+		// 	let tickIndex = targetAstNode.value.indexOf(ticks[0])
+		// 	let prespace = ticks[1]
+		// 	let tickContent = ticks[2]
 
-		if (ticks) {
-			let tickIndex = targetAstNode.value.indexOf(ticks[0])
-			let prespace = ticks[1]
-			let tickContent = ticks[2]
-
-			let aftspace = ticks[3]
-			this.node.children.splice(
-				targetIndex,
-				1,
-				u("text", targetAstNode.value.slice(0, tickIndex) + prespace),
-				u("inlineCode", tickContent),
-				u(
-					"text",
-					aftspace + targetAstNode.value.slice(tickIndex + ticks[0].length)
-				)
-			)
-		}
+		// 	let aftspace = ticks[3]
+		// 	this.node.children.splice(
+		// 		targetIndex,
+		// 		1,
+		// 		u("text", targetAstNode.value.slice(0, tickIndex) + prespace),
+		// 		u("inlineCode", {id: shortId()}, tickContent),
+		// 		u(
+		// 			"text",
+		// 			aftspace + targetAstNode.value.slice(tickIndex + ticks[0].length)
+		// 		)
+		// 	)
+		// } else {
+		// 	return caret
+		// }
 	}
 
 	insertTextAsCommonAncestor(
-		startElement: MayoMdastContentElement,
-		endElement: MayoMdastContentElement,
-		text: event.data,
+		startElement: MayoContentElement,
+		endElement: MayoContentElement,
+		text: string,
 		range: StaticRange
-	) {
+	): CaretInstruction {
 		// This is tricky for me right now
 		// but, what i want to to i think is
 		// to move the startNode and endNode (which are both text nodes) up to being direct
 		// children of `this`, removing the other nodes between start and end
 		// and then merging them if they're the same type...
 		// i think.
-		//ithink
-		let start
-		let end
-		if (startElement.no) {
-		}
-		this.node.children.splice()
-		let startNode: md.Content
-		let endNode: md.Content
-		if (startElement == this) {
-			let startIndex = this.interestingChildren.indexOf(range.startContainer)
-			if (startIndex == -1) {
-				throw new Error(`im not the ancestor of ${startElement}`)
-			}
-			startNode = this.node[startIndex]
-		} else {
-			for (let kid of this.interestingChildren) {
-				if ("node" in kid) {
-					if (find(kid.node, startElement.node)) {
-						let x = startElement
-						while (x.children) {}
-					}
-				}
-			}
-			// demote(this.node, startNode)
-		}
+		// i think.
+		// TODO write a
 
-		if (endElement == this) {
+		let startVal = range.startContainer.nodeValue?.slice(0, range.startOffset)
+		let endVal = range.endContainer.nodeValue?.slice(range.endOffset)
+		console.log({startVal, endVal})
+		let startChildIndex = startElement.interestingChildren.indexOf(
+			range.startContainer
+		)
+		let endChildIndex = endElement.interestingChildren.indexOf(
+			range.endContainer
+		)
+		let startIndex = this.interestingChildren.indexOf(startElement)
+		let endIndex = this.interestingChildren.indexOf(endElement)
+		let snode
+		if (startChildIndex != -1 && startElement.node.children) {
+			snode = startElement.node.children[startChildIndex]
+		} else {
+			snode = startElement.node
 		}
+		console.log(startChildIndex)
+		console.info(split(this.node, snode, range.startOffset))
+		return {type: "text", element: startElement.firstChild, startOffset: 0}
+		let enode
+		if (endChildIndex != -1) {
+			enode = endElement.node.children[endChildIndex]
+		} else {
+			enode = endElement.node
+		}
+		demoteFully(this.node, snode, "prefix")
+		demoteFully(this.node, enode, "suffix")
+		console.log({startChildIndex, endChildIndex, startIndex, endIndex})
 	}
 
 	insertParagraph(range: StaticRange) {
+		console.log(range.startContainer, range.endContainer)
 		if (range.collapsed) {
 			if (range.startContainer.parentElement == this) {
-				if (range.endOffset == range.endContainer.nodeValue.length) {
-					console.log(this.parentElement.node)
+				if (range.endOffset == range.endContainer!.nodeValue!.length) {
 				}
 			}
 		}
 	}
 
-	// TODO oh look a pattern
-	deleteContentBackward(selection: Selection, event: InputEvent) {
-		let index = this.interestingChildren.indexOf(
-			selection.focusNode! as ChildNode
-		)
-		this.node.children[index].value = selection.focusNode!.nodeValue
-		return true
-	}
+	selfDeleteContentBackward(range: StaticRange) {
+		let targetTextNode = range.startContainer
+		let targetIndex = this.interestingChildren.indexOf(targetTextNode)
+		if (targetIndex == -1) {
+			throw new Error(`${targetTextNode} is not a child of ${this}`)
+		}
 
-	deleteContentForward(selection: Selection, event: InputEvent) {
-		let index = this.interestingChildren.indexOf(
-			selection.focusNode! as ChildNode
-		)
-		this.node.children[index].value = selection.focusNode!.nodeValue
-		return true
-	}
+		let targetAstNode = this.node.children[targetIndex]
+		if (targetAstNode.type != "text") {
+			throw new Error(
+				`expected the ast node to be of type text, got ${targetAstNode.type}`
+			)
+		}
+		targetAstNode.value =
+			targetAstNode.value.slice(0, range.startOffset) +
+			targetAstNode.value.slice(range.endOffset)
 
-	deleteByCut(selection: Selection, event: InputEvent) {
-		// TODO figure out how to cut
-		return event.preventDefault()
-		let index = this.interestingChildren.indexOf(
-			selection.focusNode! as ChildNode
-		)
-		this.node.children[index].value = selection.focusNode!.nodeValue
-		return true
-	}
+		let caret = {
+			type: "parent" as const,
+			parent: this,
+			index: targetIndex,
+			startOffset: range.startOffset,
+		}
 
-	insertFromPaste(selection: Selection, event: InputEvent) {
-		// TODO figure out how pasting works
-		return event.preventDefault()
-		let index = this.interestingChildren.indexOf(
-			selection.focusNode! as ChildNode
-		)
-		this.node.children[index].value = selection.focusNode!.nodeValue
-		return true
+		return caret
 	}
 }

@@ -1,4 +1,3 @@
-import {target, targets} from "@github/catalyst"
 import {MayoLiteralElement} from "./mayo-element"
 import * as md from "mdast"
 export default class MayoTextElement extends MayoLiteralElement<md.Text> {
