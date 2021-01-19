@@ -28,10 +28,15 @@ export default class MayoSidebarFileElement extends LitElement {
 			}
 		`
 	}
+
+	new() {
+		localStorage.setItem("file", " ")
+	}
+
 	render() {
 		let [name, ext] = this.path!.split(".")
 
-		return html`<a href="${this.path!}" class="link">
+		return html`<a href="${this.path!}" @click=${this.new} class="link">
 			<span class="name">${name}</span>
 			<span class="ext">${ext}</span>
 		</a>`

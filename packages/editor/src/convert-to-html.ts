@@ -2,6 +2,7 @@ import type * as md from "mdast"
 import {html, TemplateResult} from "lit-html"
 import {spread} from "@open-wc/lit-helpers"
 import * as is from "./is"
+import u from "unist-builder"
 
 type Handler = (node: md.Content | md.Root, parent: md.Parent | md.Root) => any
 
@@ -224,7 +225,6 @@ let handlers: Handlers = {
 		// return html`<mayo-text ...="${spread(spreadable(node))}" .node=${node}
 		// 	>${node.value}</mayo-text
 		// >`
-		// }
 		return node.value
 	},
 

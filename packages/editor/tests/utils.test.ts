@@ -1,52 +1,27 @@
 import * as utils from "../src/utils"
+
 import fromMarkdown from "mdast-util-from-markdown"
 import toMarkdown from "mdast-util-to-markdown"
-import {Node, select, visit, EXIT, selectAll} from "unist-utils-core"
-import {Parent, Root, Text} from "mdast"
-import * as is from "../src/is"
-import cloneDeep from "clone-deep"
+import {select, selectAll} from "unist-utils-core"
+import * as md from "mdast"
+
 import removePosition from "unist-util-remove-position"
 
-import u from "unist-builder"
+describe("split", () => {
+	test("splits an ordinary text node", () => {
+		let tree = parse("hellothere")
+		let expected = [
+			parse(`hello`).children[0].children[0],
+			parse(`there`).children[0].children[0],
+		]
+		let p = select("paragraph", tree)
+		let text = select<md.Text>("text", p)
+		let actual = utils.split(tree, text, 5)
 
-function split(root: Parent, target: Text, offset: number) {
-	let leftText = target.value.slice(0, offset)
-	let rightText = target.value.slice(offset)
-
-	let leftNode = u("text", leftText)
-	let rightNode = u("text", rightText)
-	let leftStack = []
-	let rightStack = []
-
-	// utils.remove(root, {}, target)
-	visit(root, target, (node, index, parents) => {
-		console.log(parents.map(p => p.type))
-		let nextpc = []
-		let nextac = []
-		for (let i = parents.length - 1; i > 0; i--) {
-			let highParent = parents[i - 1]
-			let lowParent = parents[i]
-			let idx = highParent.children.indexOf(lowParent)
-			let pc = highParent.children.slice(0, idx)
-			let ac = highParent.children.slice(idx + 1)
-			if (is.inline(lowParent.type)) {
-				leftNode = u(lowParent.type, [...nextpc, leftNode])
-				rightNode = u(lowParent.type, [rightNode, ...nextac])
-			}
-			nextpc = pc
-			nextac = ac
-			if (is.block(lowParent.type)) {
-				break
-			}
-		}
-
-		return EXIT
+		expect(toMarkdown(actual[0])).toEqual(toMarkdown(expected[0]))
+		expect(toMarkdown(actual[1])).toEqual(toMarkdown(expected[1]))
+		expect(actual).toEqual(expected)
 	})
-
-	return [leftNode, rightNode]
-}
-
-describe.only("split", () => {
 	test("splits a node in half", () => {
 		let tree = parse("_hellothere_")
 		let expected = [
@@ -54,8 +29,20 @@ describe.only("split", () => {
 			parse(`_there_`).children[0].children[0],
 		]
 		let p = select("paragraph", tree)
-		let text = select<Text>("text", p)
-		let actual = split(tree, text, 5)
+		let text = select<md.Text>("text", p)
+		let actual = utils.split(tree, text, 5)
+		expect(actual).toEqual(expected)
+	})
+
+	it("works in a heading", () => {
+		let tree = parse("# well, well, well")
+		let expected = [
+			parse(`# well, well`).children[0].children[0],
+			parse(`, well`).children[0].children[0],
+		]
+		let h1 = select("heading", tree)
+		let text = select<md.Text>("text", h1)
+		let actual = utils.split(tree, text, 10)
 		expect(actual).toEqual(expected)
 	})
 
@@ -66,8 +53,8 @@ describe.only("split", () => {
 			parse(`_**y** ok_`).children[0].children[0],
 		]
 		let p = select("paragraph", tree)
-		let text = selectAll<Text>("text", p)[1]
-		let actual = split(tree, text, 2)
+		let text = selectAll<md.Text>("text", p)[1]
+		let actual = utils.split(tree, text, 2)
 
 		expect(toMarkdown(actual[0])).toEqual(toMarkdown(expected[0]))
 		expect(toMarkdown(actual[1])).toEqual(toMarkdown(expected[1]))
@@ -75,14 +62,31 @@ describe.only("split", () => {
 	})
 
 	test("splits a code node correct", () => {
-		let tree = parse("_oh **hey** ok_")
+		let tree = parse("_oh **hello, `here` is it** ok_")
 		let expected = [
-			parse(`_oh **he**_`).children[0].children[0],
-			parse(`_**y** ok_`).children[0].children[0],
+			parse(`_oh **hello, \`he\`**_`).children[0].children[0],
+			parse(`_**\`re\` is it** ok_`).children[0].children[0],
 		]
 		let p = select("paragraph", tree)
-		let text = selectAll<Text>("text", p)[1]
-		let actual = split(tree, text, 2)
+		let text = select<md.InlineCode>("inlineCode", p)
+
+		let actual = utils.split(tree, text, 2)
+
+		expect(toMarkdown(actual[0])).toEqual(toMarkdown(expected[0]))
+		expect(toMarkdown(actual[1])).toEqual(toMarkdown(expected[1]))
+		expect(actual).toEqual(expected)
+	})
+
+	test("returns only the split node when there are other children", () => {
+		let tree = parse("one two **three** four")
+		let expected = [
+			parse(`**thr**`).children[0].children[0],
+			parse(`**ee**`).children[0].children[0],
+		]
+		let p = select("paragraph", tree)
+		let text = selectAll<md.Text>("text", p)[1]
+
+		let actual = utils.split(tree, text, 3)
 
 		expect(toMarkdown(actual[0])).toEqual(toMarkdown(expected[0]))
 		expect(toMarkdown(actual[1])).toEqual(toMarkdown(expected[1]))
@@ -90,35 +94,8 @@ describe.only("split", () => {
 	})
 })
 
-function insertParagraph(root: Parent, target: Text, offset: number) {
-	visit(root, target, (node, index, parents) => {
-		parents = [...parents].reverse()
-		let t = u("text", target.value.slice(offset))
-		target.value = target.value.slice(0, offset)
-
-		let p = u("paragraph", [u(node.type, t)])
-
-		if (is.block(parents[0].type)) {
-			// a normal direct text node
-			let indexInParent = parents[0].children.indexOf(target)
-			let rest = parents[0].children.slice(indexInParent)
-		} else if (is.inline(parents[0].type)) {
-		}
-
-		for (let parent of parents.slice(1)) {
-			if (is.block(parent.type)) {
-				let rest = parent.children.slice(indexInParent)
-				console.log({rest})
-				parent.children.splice(indexInParent + 1, 0, p)
-				break
-			}
-		}
-		return EXIT
-	})
-}
-
-function parse(string: string): Root {
-	return removePosition(fromMarkdown(string), true) as Root
+function parse(string: string): md.Root {
+	return removePosition(fromMarkdown(string), true) as md.Root
 }
 
 describe("insertParagraph", () => {
@@ -128,21 +105,94 @@ describe("insertParagraph", () => {
  
 there`)
 		let p = select("paragraph", tree)
-		let text = select<Text>("text", p)
-		insertParagraph(tree, text, 5)
+		let text = select<md.Text>("text", p)
+		utils.insertParagraph(tree, text, 5)
+
+		expect(toMarkdown(tree)).toEqual(toMarkdown(expected))
+		expect(tree).toEqual(expected)
+	})
+
+	test("inserts a new paragraph where the cursor is (in a code)", () => {
+		let tree = parse("`hellothere`")
+		let expected = parse(`\`hello\`
+ 
+\`there\``)
+		let p = select("paragraph", tree)
+		let text = select<md.InlineCode>("inlineCode", p)
+		utils.insertParagraph(tree, text, 5)
+
+		expect(toMarkdown(tree)).toEqual(toMarkdown(expected))
+		expect(tree).toEqual(expected)
+	})
+
+	test("inserts a new paragraph where the cursor is (in a complex place)", () => {
+		let tree = parse(
+			"this is *story __all about how my life__ got flipped* turned up side down"
+		)
+		let expected = parse(
+			`this is *story __all ab__*
+
+*__out how my life__ got flipped* turned up side down`
+		)
+		let p = select("paragraph", tree)
+		let text = selectAll<md.Text>("text", p)[2]
+		utils.insertParagraph(tree, text, 6)
+
+		expect(toMarkdown(tree)).toEqual(toMarkdown(expected))
+		expect(tree).toEqual(expected)
+	})
+
+	test("inserts a new paragraph where the cursor is (in a complex place in a code)", () => {
+		let tree = parse(
+			"this is *story __all about `how` my life__ got flipped* turned up side down"
+		)
+		let expected = parse(
+			`this is *story __all about \`h\`__*
+
+*__\`ow\` my life__ got flipped* turned up side down`
+		)
+		let p = select("paragraph", tree)
+		let inlineCode = select<md.InlineCode>("inlineCode", p)
+		utils.insertParagraph(tree, inlineCode, 1)
+
+		expect(toMarkdown(tree)).toEqual(toMarkdown(expected))
 		expect(tree).toEqual(expected)
 	})
 
 	test("inserts a new paragraph, maintaining whole nodes", () => {
-		let tree = parse("split _me in two_ please")
-		let expected = parse(`split _me _
+		let tree = parse("split __mein two__ please")
+		let expected = parse(`split __me__
 		
-_in two_ please`)
+__in two__ please`)
 		let p = select("paragraph", tree)
-		let text = selectAll<Text>("text", p)[1]
+		let text = selectAll<md.Text>("text", p)[1]
 
-		insertParagraph(tree, text, 3)
+		utils.insertParagraph(tree, text, 2)
+
+		expect(toMarkdown(tree)).toEqual(toMarkdown(expected))
 		expect(tree).toEqual(expected)
-		console.log(p.children)
+	})
+
+	it("works in a heading", () => {
+		let tree = parse("# well, well, well")
+		let expected = parse(`# well, well
+			
+, well`)
+		let h1 = select("heading", tree)
+		let text = select<md.Text>("text", h1)
+		utils.insertParagraph(tree, text, 10)
+		expect(tree).toEqual(expected)
+	})
+
+	it("works in a heading with special elements", () => {
+		let tree = parse("# well, _well_, well, well")
+		let expected = parse(`# we
+			
+ll, _well_, well, well`)
+		let h1 = select("heading", tree)
+		let text = selectAll<md.Text>("text", h1)[0]
+		utils.insertParagraph(tree, text, 2)
+		expect(toMarkdown(tree)).toEqual(toMarkdown(expected))
+		expect(tree).toEqual(expected)
 	})
 })

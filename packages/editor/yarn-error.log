@@ -1,8 +1,8 @@
 Arguments: 
-  /home/chee/.cache/volta/tools/image/node/12.20.1/bin/node /home/chee/.cache/volta/tools/image/yarn/1.22.10/bin/yarn.js add @types/unist-util-select
+  /home/chee/.cache/volta/tools/image/node/12.20.1/bin/node /home/chee/.cache/volta/tools/image/yarn/1.22.10/bin/yarn.js add --json @parcel/transformer-typescript- -D
 
 PATH: 
-  /home/chee/.cache/volta/tools/image/npm/7.4.0/bin:/home/chee/.cache/volta/tools/image/yarn/1.22.10/bin:/home/chee/.cache/volta/tools/image/node/12.20.1/bin:/home/chee/.pyenv/shims:/opt/devkitpro/tools/bin:/home/chee/.cache/volta/bin:/home/chee/bin:/home/chee/.local/bin:/home/chee/.cargo/bin:/home/chee/programs/bin:/home/chee/.pyenv/shims:/opt/devkitpro/tools/bin:/home/chee/.cache/volta/bin:/home/chee/bin:/home/chee/.local/bin:/home/chee/.cargo/bin:/home/chee/programs/bin:/home/chee/.pyenv/shims:/opt/devkitpro/tools/bin:/home/chee/.cache/volta/bin:/home/chee/bin:/home/chee/.local/bin:/home/chee/.cargo/bin:/home/chee/programs/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/snap/bin:/snap/bin:/snap/bin
+  /tmp/yarn--1611052058507-0.4940239320846469:/home/chee/projects/mayo/packages/editor/node_modules/.bin:/home/chee/.config/yarn/link/node_modules/.bin:/home/chee/projects/mayo/node_modules/.bin:/home/chee/.cache/volta/tools/image/node/12.20.1/libexec/lib/node_modules/npm/bin/node-gyp-bin:/home/chee/.cache/volta/tools/image/node/12.20.1/lib/node_modules/npm/bin/node-gyp-bin:/home/chee/.cache/volta/tools/image/node/12.20.1/bin/node_modules/npm/bin/node-gyp-bin:/home/chee/.cache/volta/tools/image/npm/7.4.0/bin:/home/chee/.cache/volta/tools/image/yarn/1.22.10/bin:/home/chee/.cache/volta/tools/image/node/12.20.1/bin:/home/chee/.pyenv/shims:/opt/devkitpro/tools/bin:/home/chee/.cache/volta/bin:/home/chee/bin:/home/chee/.local/bin:/home/chee/.cargo/bin:/home/chee/programs/bin:/home/chee/.pyenv/shims:/opt/devkitpro/tools/bin:/home/chee/.cache/volta/bin:/home/chee/bin:/home/chee/.local/bin:/home/chee/.cargo/bin:/home/chee/programs/bin:/home/chee/.pyenv/shims:/opt/devkitpro/tools/bin:/home/chee/.cache/volta/bin:/home/chee/bin:/home/chee/.local/bin:/home/chee/.cargo/bin:/home/chee/programs/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/snap/bin:/snap/bin:/snap/bin
 
 Yarn version: 
   1.22.10
@@ -14,7 +14,7 @@ Platform:
   linux x64
 
 Trace: 
-  Error: https://registry.yarnpkg.com/@types%2funist-util-select: Not found
+  Error: https://registry.yarnpkg.com/@parcel%2ftransformer-typescript-: Not found
       at Request.params.callback [as _callback] (/home/chee/.cache/volta/tools/image/yarn/1.22.10/lib/cli.js:66988:18)
       at Request.self.callback (/home/chee/.cache/volta/tools/image/yarn/1.22.10/lib/cli.js:140662:22)
       at Request.emit (events.js:314:20)
@@ -83,6 +83,7 @@ npm manifest:
   		"unist-util-find-all-between": "^2.1.0",
   		"unist-util-parents": "^1.0.3",
   		"unist-util-remove": "^2.0.1",
+  		"unist-util-remove-position": "^3.0.0",
   		"unist-util-select": "^3.0.4",
   		"unist-util-visit": "^2.0.3",
   		"unist-util-visit-parents": "^3.1.1",
@@ -10233,6 +10234,13 @@ Lockfile:
     version "3.1.0"
     resolved "https://registry.yarnpkg.com/unist-util-position/-/unist-util-position-3.1.0.tgz#1c42ee6301f8d52f47d14f62bbdb796571fa2d47"
     integrity sha512-w+PkwCbYSFw8vpgWD0v7zRCl1FpY3fjDSQ3/N/wNd9Ffa4gPi8+4keqt99N3XW6F99t/mUzp2xAhNmfKWp95QA==
+  
+  unist-util-remove-position@^3.0.0:
+    version "3.0.0"
+    resolved "https://registry.yarnpkg.com/unist-util-remove-position/-/unist-util-remove-position-3.0.0.tgz#4cd19e82c8e665f462b6acfcfd0a8353235a88e9"
+    integrity sha512-17kIOuolVuK16LMb9KyMJlqdfCtlfQY5FjY3Sdo9iC7F5wqdXhNjMq0PBvMpkVNNnAmHxXssUW+rZ9T2zbP0Rg==
+    dependencies:
+      unist-util-visit "^2.0.0"
   
   unist-util-remove@^2.0.1:
     version "2.0.1"

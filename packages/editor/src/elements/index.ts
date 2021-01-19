@@ -87,6 +87,8 @@ export type {
 
 export default [
 	MayoDocumentElement,
+	MayoSidebarElement,
+	MayoSidebarFileElement,
 	MayoBreakElement,
 	MayoCodeElement,
 	MayoInlineCodeElement,

@@ -16,6 +16,8 @@ import {MayoElement, MayoParentElement} from "./markdown/mayo-element"
 // @ts-ignore
 import compact from "mdast-util-compact"
 import {visit} from "unist-utils-core"
+import {insertParagraph} from "../utils"
+import * as is from "../is"
 
 export default class MayoDocumentElement extends HTMLElement {
 	@target document: HTMLElement
@@ -82,6 +84,7 @@ export default class MayoDocumentElement extends HTMLElement {
 
 	handleInput(event: BeforeInputEvent) {
 		// TODO multiple ranges?
+
 		let range: StaticRange = event.getTargetRanges()[0]
 		let isCaret =
 			range.endContainer == range.startContainer &&
@@ -95,19 +98,13 @@ export default class MayoDocumentElement extends HTMLElement {
 		let startNode: md.Content = startElement.node
 		let endNode: md.Content = startElement.node
 
-		let startBlockElement =
-			startElement.type == "block"
-				? startElement
-				: (startElement.closest(
-						'[mayo-type="block"]'
-				  )! as MayoParentElement<any>)
+		let startBlockElement = startElement.block
+			? startElement
+			: (startElement.closest("[block]")! as MayoParentElement<any>)
 
-		let endBlockElement =
-			endElement.type == "block"
-				? endElement
-				: (endElement.closest(
-						'[mayo-type="block"]'
-				  )! as MayoParentElement<any>)
+		let endBlockElement = endElement.block
+			? endElement
+			: (endElement.closest("[block]")! as MayoParentElement<any>)
 
 		// the index of the start block in the mayo-document (y)
 		let startBlockIndex = Array.from(this.document.children).indexOf(
@@ -120,20 +117,20 @@ export default class MayoDocumentElement extends HTMLElement {
 
 		// the index of the start element in the start block (x)
 		let startElementIndex = 0
-		if (startElement.type == "inline") {
+		if (startElement.inline) {
 			startElementIndex = startBlockElement.interestingChildren.indexOf(
 				startElement
 			)
-		} else if (startElement.type == "block") {
+		} else if (startElement.block) {
 			startElementIndex = startBlockElement.interestingChildren.indexOf(
 				range.startContainer
 			)
 		}
 
 		let endElementIndex = 0
-		if (endElement.type == "inline") {
+		if (endElement.inline) {
 			endElementIndex = endBlockElement.interestingChildren.indexOf(endElement)
-		} else if (endElement.type == "block") {
+		} else if (endElement.block) {
 			endElementIndex = endBlockElement.interestingChildren.indexOf(
 				range.endContainer
 			)
@@ -177,13 +174,28 @@ export default class MayoDocumentElement extends HTMLElement {
 			}
 			case "insertParagraph": {
 				let id = shortId()
-				visit(
-					this.ast,
-					range.startContainer.parentElement.node,
-					(node, index, parents) => {
-						console.log(node, index, parents)
-					}
-				)
+				if ("value" in startElement.node) {
+					// TODO isLiteralElement typeguard
+					insertParagraph(this.ast, startElement.node, range.startOffset, id)
+				} else if (startElement == startBlockElement) {
+					insertParagraph(
+						this.ast,
+						startElement.node.children[startElementIndex],
+						range.startOffset,
+						id
+					)
+				} else {
+					let idx = startElement.interestingChildren.indexOf(
+						range.startContainer
+					)
+					insertParagraph(
+						this.ast,
+						startElement.node.children[idx],
+						range.startOffset,
+						id
+					)
+				}
+
 				this.setAttribute("dirty", "true")
 				this.update()
 				this.updateSelection({
