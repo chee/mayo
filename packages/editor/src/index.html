@@ -1,7 +1,17 @@
 <!DOCTYPE html>
 <title>mayonaise</title>
-<script src="./mayo.ts"></script>
+<script type="module" src="./mayo.ts"></script>
 <link rel="stylesheet" href="./styl.styl" />
 
-<mayo-sidebar role="nav"></mayo-sidebar>
-<mayo-document role="main"></mayo-document>
+<mayo-app>
+	<mayo-sidebar
+		role="nav"
+		data-action="open:mayo-app#open"
+		data-target="mayo-app.sidebar"
+	></mayo-sidebar>
+	<mayo-document
+		role="main"
+		data-target="mayo-app.document"
+		data-action="save:mayo-app#save"
+	></mayo-document>
+</mayo-app>

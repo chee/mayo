@@ -1,9 +1,16 @@
 import {LitElement, html, css, customElement, property} from "lit-element"
+import vfile, {VFile} from "vfile"
+
+export interface ChooseEvent extends CustomEvent {
+	detail: {
+		name: string
+	}
+}
 
 @customElement("mayo-sidebar")
 export default class MayoSidebarElement extends LitElement {
-	@property({type: Array})
-	paths = ["fish.md", "monkey.md"]
+	@property({attribute: false})
+	files: Array<FileSystemHandle> = []
 
 	static get styles() {
 		return css`
@@ -29,18 +36,51 @@ export default class MayoSidebarElement extends LitElement {
 		`
 	}
 
+	directory: FileSystemDirectoryHandle
+
+	async open() {
+		let dir = await window.showDirectoryPicker()
+		this.directory = dir
+		let files = []
+		for await (let file of dir.values()) {
+			files.push(file)
+		}
+		this.files = files
+	}
+
+	file: File
+
+	async choose(event: ChooseEvent) {
+		let {name} = event.detail
+
+		let filehandle = await this.files.find(f => f.name == name)
+
+		this.dispatchEvent(new CustomEvent("open", {detail: {filehandle}}))
+	}
+
 	render() {
 		return html`
 			<nav>
-				<ul>
-					${this.paths.map(
-						path => html`<li>
-							<mayo-sidebar-file path="${path}">
-								<template data-shadowroot></template>
-							</mayo-sidebar-file>
-						</li>`
-					)}
-				</ul>
+				${this.files.length
+					? html`
+							<ul>
+								${this.files.map(
+									file => html`<li>
+										${file.kind == "file"
+											? html` <mayo-sidebar-file
+													.file=${file}
+													@open=${this.choose}
+													path="${file.name}"
+											  >
+													<template data-shadowroot></template>
+											  </mayo-sidebar-file>`
+											: "TODO: directories"}
+									</li>`
+								)}
+							</ul>
+					  `
+					: ""}
+				<button @click=${this.open}>open a directory</button>
 			</nav>
 		`
 	}

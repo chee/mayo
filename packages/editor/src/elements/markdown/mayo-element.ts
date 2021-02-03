@@ -115,6 +115,7 @@ export class MayoParentElement<
 			throw new Error(`${targetTextNode} is not a child of ${this}`)
 		}
 
+		console.log(this.node)
 		let targetAstNode = this.node.children[targetIndex]
 		if (targetAstNode.type != "text") {
 			throw new Error(

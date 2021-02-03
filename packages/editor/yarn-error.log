@@ -1,30 +1,30 @@
 Arguments: 
-  /home/chee/.cache/volta/tools/image/node/12.20.1/bin/node /home/chee/.cache/volta/tools/image/yarn/1.22.10/bin/yarn.js add --json @parcel/transformer-typescript- -D
+  /home/chee/.cache/volta/tools/image/node/15.6.0/bin/node /home/chee/.cache/volta/tools/image/yarn/1.22.10/bin/yarn.js add --dev @types/webcomponentsjs
 
 PATH: 
-  /tmp/yarn--1611052058507-0.4940239320846469:/home/chee/projects/mayo/packages/editor/node_modules/.bin:/home/chee/.config/yarn/link/node_modules/.bin:/home/chee/projects/mayo/node_modules/.bin:/home/chee/.cache/volta/tools/image/node/12.20.1/libexec/lib/node_modules/npm/bin/node-gyp-bin:/home/chee/.cache/volta/tools/image/node/12.20.1/lib/node_modules/npm/bin/node-gyp-bin:/home/chee/.cache/volta/tools/image/node/12.20.1/bin/node_modules/npm/bin/node-gyp-bin:/home/chee/.cache/volta/tools/image/npm/7.4.0/bin:/home/chee/.cache/volta/tools/image/yarn/1.22.10/bin:/home/chee/.cache/volta/tools/image/node/12.20.1/bin:/home/chee/.pyenv/shims:/opt/devkitpro/tools/bin:/home/chee/.cache/volta/bin:/home/chee/bin:/home/chee/.local/bin:/home/chee/.cargo/bin:/home/chee/programs/bin:/home/chee/.pyenv/shims:/opt/devkitpro/tools/bin:/home/chee/.cache/volta/bin:/home/chee/bin:/home/chee/.local/bin:/home/chee/.cargo/bin:/home/chee/programs/bin:/home/chee/.pyenv/shims:/opt/devkitpro/tools/bin:/home/chee/.cache/volta/bin:/home/chee/bin:/home/chee/.local/bin:/home/chee/.cargo/bin:/home/chee/programs/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/snap/bin:/snap/bin:/snap/bin
+  /home/chee/.cache/volta/tools/image/npm/7.4.0/bin:/home/chee/.cache/volta/tools/image/yarn/1.22.10/bin:/home/chee/.cache/volta/tools/image/node/15.6.0/bin:/home/chee/.pyenv/shims:/opt/devkitpro/tools/bin:/home/chee/.cache/volta/bin:/home/chee/bin:/home/chee/.local/bin:/home/chee/.cargo/bin:/home/chee/programs/bin:/home/chee/.pyenv/shims:/opt/devkitpro/tools/bin:/home/chee/.cache/volta/bin:/home/chee/bin:/home/chee/.local/bin:/home/chee/.cargo/bin:/home/chee/programs/bin:/home/chee/.pyenv/shims:/opt/devkitpro/tools/bin:/home/chee/.cache/volta/bin:/home/chee/bin:/home/chee/.local/bin:/home/chee/.cargo/bin:/home/chee/programs/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/snap/bin:/snap/bin:/snap/bin
 
 Yarn version: 
   1.22.10
 
 Node version: 
-  12.20.1
+  15.6.0
 
 Platform: 
   linux x64
 
 Trace: 
-  Error: https://registry.yarnpkg.com/@parcel%2ftransformer-typescript-: Not found
+  Error: https://registry.yarnpkg.com/@types%2fwebcomponentsjs: Not found
       at Request.params.callback [as _callback] (/home/chee/.cache/volta/tools/image/yarn/1.22.10/lib/cli.js:66988:18)
       at Request.self.callback (/home/chee/.cache/volta/tools/image/yarn/1.22.10/lib/cli.js:140662:22)
-      at Request.emit (events.js:314:20)
+      at Request.emit (node:events:379:20)
       at Request.<anonymous> (/home/chee/.cache/volta/tools/image/yarn/1.22.10/lib/cli.js:141634:10)
-      at Request.emit (events.js:314:20)
+      at Request.emit (node:events:379:20)
       at IncomingMessage.<anonymous> (/home/chee/.cache/volta/tools/image/yarn/1.22.10/lib/cli.js:141556:12)
-      at Object.onceWrapper (events.js:420:28)
-      at IncomingMessage.emit (events.js:326:22)
-      at endReadableNT (_stream_readable.js:1241:12)
-      at processTicksAndRejections (internal/process/task_queues.js:84:21)
+      at Object.onceWrapper (node:events:485:28)
+      at IncomingMessage.emit (node:events:391:22)
+      at endReadableNT (node:internal/streams/readable:1307:12)
+      at processTicksAndRejections (node:internal/process/task_queues:81:21)
 
 npm manifest: 
   {
@@ -66,6 +66,7 @@ npm manifest:
   		"@types/mdast": "^3.0.3",
   		"@types/shortid": "^0.0.29",
   		"@types/unist": "^2.0.3",
+  		"@webcomponents/webcomponentsjs": "^2.5.0",
   		"clone-deep": "^4.0.1",
   		"hast-util-to-html": "^7.1.2",
   		"lit-element": "^2.4.0",
@@ -88,6 +89,14 @@ npm manifest:
   		"unist-util-visit": "^2.0.3",
   		"unist-util-visit-parents": "^3.1.1",
   		"unist-utils-core": "^1.0.5"
+  	},
+  	"targets": {
+  		"main": {
+  			"engines": {
+  				"node": ">=15.x",
+  				"electron": ">=12.x"
+  			}
+  		}
   	}
   }
 
@@ -2637,6 +2646,11 @@ Lockfile:
     integrity sha512-A1b8SU4D10uoPjwb0lnHmmu8wZhR9d+9o2PKBQT2jU5YPTKsxac6M2qGAdY7VcL+dHHhARVUDmeg0rOrcd9EjA==
     dependencies:
       "@types/node" "*"
+  
+  "@webcomponents/webcomponentsjs@^2.5.0":
+    version "2.5.0"
+    resolved "https://registry.yarnpkg.com/@webcomponents/webcomponentsjs/-/webcomponentsjs-2.5.0.tgz#61b27785a6ad5bfd68fa018201fe418b118cb38d"
+    integrity sha512-C0l51MWQZ9kLzcxOZtniOMohpIFdCLZum7/TEHv3XWFc1Fvt5HCpbSX84x8ltka/JuNKcuiDnxXFkiB2gaePcg==
   
   abab@^2.0.0, abab@^2.0.3:
     version "2.0.5"

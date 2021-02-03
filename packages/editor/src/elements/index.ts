@@ -1,3 +1,5 @@
+import {MayoElement, MayoParentElement} from "./markdown/mayo-element"
+
 import MayoBreakElement from "./markdown/mayo-break"
 import MayoCodeElement from "./markdown/mayo-code"
 import MayoInlineCodeElement from "./markdown/mayo-inline-code"
@@ -20,11 +22,11 @@ import MayoTextElement from "./markdown/mayo-text"
 import MayoTomlElement from "./markdown/mayo-toml"
 import MayoYamlElement from "./markdown/mayo-yaml"
 
+import MayoAppElement from "./mayo-app"
 import MayoSidebarElement from "./mayo-sidebar"
 import MayoSidebarFileElement from "./mayo-sidebar-file"
 import MayoDocumentElement from "./mayo-document"
 import MayoKillerElement from "./mayo-killer"
-import {MayoElement, MayoParentElement} from "./markdown/mayo-element"
 
 export type MayoStaticPhrasingContentElement =
 	| MayoBreakElement
@@ -86,6 +88,7 @@ export type {
 }
 
 export default [
+	MayoAppElement,
 	MayoDocumentElement,
 	MayoSidebarElement,
 	MayoSidebarFileElement,

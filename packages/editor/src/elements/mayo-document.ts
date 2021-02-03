@@ -15,14 +15,35 @@ import {MayoElement, MayoParentElement} from "./markdown/mayo-element"
 // TODO learn how to declare types for this
 // @ts-ignore
 import compact from "mdast-util-compact"
-import {visit} from "unist-utils-core"
+import {selectAll, visit} from "unist-utils-core"
 import {insertParagraph} from "../utils"
 import * as is from "../is"
+import {property} from "lit-element"
 
 export default class MayoDocumentElement extends HTMLElement {
 	@target document: HTMLElement
+
+	get path() {
+		return this.getAttribute("path") || ""
+	}
+
+	set path(value: string) {
+		this.setAttribute("path", value)
+	}
+
+	get contents() {
+		return this.getAttribute("contents") || ""
+	}
+
+	set contents(value: string) {
+		this.setAttribute("contents", value)
+	}
+
 	ast: md.Root
-	content = ""
+
+	static get observedAttributes() {
+		return ["contents", "path"]
+	}
 
 	get interestingChildren(): Node[] {
 		return Array.from(this.document.childNodes).filter(
@@ -79,7 +100,6 @@ export default class MayoDocumentElement extends HTMLElement {
 		} else {
 			// this.straightUpWingTheSelection()
 		}
-		console.log(selection)
 	}
 
 	handleInput(event: BeforeInputEvent) {
@@ -211,7 +231,7 @@ export default class MayoDocumentElement extends HTMLElement {
 					range.startContainer == range.endContainer &&
 					"node" in range.startContainer
 				let child = range.startContainer as MayoElement<md.PhrasingContent>
-				console.log(range)
+
 				let index = startElement.interestingChildren.indexOf(child)
 
 				if (atStartOfSomeChild) {
@@ -312,14 +332,27 @@ export default class MayoDocumentElement extends HTMLElement {
 	}
 
 	save() {
-		localStorage.setItem("file", toMarkdown(this.ast))
-		this.removeAttribute("dirty")
+		this.dispatchEvent(new CustomEvent("save"))
 	}
 
 	update() {
+		if (!this.ast) {
+			return
+		}
 		this.ast = compact(this.ast)
 		render(convertToHtml(this.ast, this.ast), this.document)
-		// TODO show symbols for the node the caret is in
+	}
+
+	attributeChangedCallback(name: string, oldValue: any, newValue: any) {
+		if (name == "contents") {
+			let contents = newValue
+			this.ast = parse(contents)
+
+			if (this.ast.children.length == 0) {
+				this.ast.children.splice(0, 0, u("paragraph", [u("text", " ")]))
+			}
+			this.update()
+		}
 	}
 
 	connectedCallback() {
@@ -334,50 +367,14 @@ export default class MayoDocumentElement extends HTMLElement {
 			></article>`,
 			this
 		)
+		if (this.contents) {
+			let contents = this.contents
+			this.ast = parse(contents)
 
-		//this.document = document.getElementById("doc")
-
-		let file = localStorage.getItem("file")
-		if (!file) {
-			file = `# hello \`this\` and _that_ (and \`others\`)
-
-this is an _ordinary **\`document\` about** ordinary_ things, there's **nothing _going_ on**
-here of _interest to you_, or me, or anybody else.
-
-
-## a list
-
-- one
-- two
-- three
-
-1. first thing
-2. second
-3. the aeroplane
-
-## the other thing
-
-- one
-
-images like ![dog in hat](https://i.pinimg.com/originals/c1/40/6f/c1406f93f49e896ff7c54c26bbfda047.jpg) and so on
-
-> help
-> this is why i need help
-
-\`\`\`cpp filename="hello"
-auto sum(std::vector<int> nums) {
-	auto result = 0;
-	for (auto num : nums) {
-		result += num;
-	}
-	return result;
-}
-\`\`\`
-`
+			if (this.ast.children.length == 0) {
+				this.ast.children.splice(0, 0, u("paragraph", [u("text", " ")]))
+			}
+			this.update()
 		}
-		this.ast = compact(parse(file))
-
-		localStorage.setItem("file", toMarkdown(this.ast))
-		this.update()
 	}
 }

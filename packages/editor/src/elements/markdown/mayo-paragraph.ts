@@ -7,6 +7,7 @@ import shortid from "shortid"
 export default class MayoParagraphElement extends MayoParentElement<md.Paragraph> {
 	selfInsertText(text: string, range: StaticRange): CaretInstruction {
 		let atBeginning = this.atBeginningOfBlock(range)
+
 		let id = shortid()
 		let caret: CaretInstruction = {
 			type: "id",

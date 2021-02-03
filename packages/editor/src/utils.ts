@@ -77,12 +77,11 @@ export function split(
 
 	let leftNode = u(target.type, leftText)
 	let rightNode = u(target.type, rightText)
-	let leftStack = []
-	let rightStack = []
 
 	visit(root, target, (node, index, parents) => {
-		let nextpc = parents[parents.length - 1].children.slice(0, index)
-		let nextac = parents[parents.length - 1].children.slice(index + 1)
+		let firstp = parents[parents.length - 1]
+		let nextpc = firstp.children.slice(0, index)
+		let nextac = firstp.children.slice(index + 1)
 		for (let i = parents.length - 1; i > 0; i--) {
 			let highParent = parents[i - 1]
 			let lowParent = parents[i]
@@ -104,43 +103,6 @@ export function split(
 	})
 
 	return [leftNode, rightNode]
-}
-
-export function demoteFully(
-	root: md.Content,
-	target: md.Content,
-	symbolLocation: "prefix" | "suffix"
-) {
-	visit<md.Content, md.Parent>(root, target, (n, index, parents) => {
-		if (n.value) {
-			let symbol = pairSymbolFor(n)
-			n.type = "text"
-			if (symbol) {
-				if (symbolLocation == "prefix") {
-					n.value = symbol + n.value
-				} else if (symbolLocation == "suffix") {
-					n.value = n.value + symbol + ""
-				}
-			}
-		} else if (Array.isArray(n.children)) {
-			let symbol = pairSymbolFor(n)
-			let kids = [...n.children]
-			if (symbol) {
-				let s = u("text", symbol)
-				if (symbolLocation == "prefix") {
-					kids.unshift(s)
-				} else if (symbolLocation == "suffix") {
-					kids.push(s)
-				}
-			}
-			parents[parents.length - 1].children.splice(index, 1, ...kids)
-		}
-
-		if (parents.length > 1) {
-			demoteFully(root, parents[parents.length - 1])
-		} else {
-		}
-	})
 }
 
 export function toString(node: unist.Node) {
