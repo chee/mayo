@@ -4,7 +4,7 @@
 	"main": "dist/index.html",
 	"electron-main": "dist/electron.js",
 	"description": "the mayo markdown what-you-see-is-what-you-mean editor",
-	"repository": "https://git.snoot.club/chee/mayo",
+	"repository": "https://github.com/chee/mayo",
 	"author": "chee",
 	"license": "GPL-3.0+",
 	"scripts": {

@@ -35,7 +35,7 @@ npm manifest:
   	"source": "src/mayo.ts",
   	"types": "dist/mayo.d.ts",
   	"description": "the mayo markdown what-you-see-is-what-you-mean editor",
-  	"repository": "https://git.snoot.club/chee/mayo",
+  	"repository": "https://github.com/chee/mayo",
   	"author": "chee",
   	"license": "GPL-3.0+",
   	"scripts": {
