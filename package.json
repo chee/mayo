@@ -3,7 +3,7 @@
     "packages/*"
   ],
   "name": "mayo-editor",
-  "version": "1.0.0-alpha.0",
+  "version": "1.0.0",
   "description": "the mayo editor",
   "main": "index.js",
   "repository": "https://github.com/chee/mayo",
